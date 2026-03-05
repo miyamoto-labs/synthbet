@@ -2,16 +2,26 @@
 
 import { useState } from "react";
 
-const AMOUNTS = [10, 25, 50, 100];
+const AMOUNTS = [5, 10, 25, 50];
+const SLIPPAGE_OPTIONS = [
+  { label: "5%", value: 0.05 },
+  { label: "10%", value: 0.10 },
+  { label: "15%", value: 0.15 },
+  { label: "20%", value: 0.20 },
+];
 
 type BetButtonsProps = {
   asset: string;
-  timeframe: "1h" | "daily";
+  timeframe: "15m" | "1h" | "daily";
   synthProbUp: number;
   polyProbUp: number;
   entryPrice: number;
   eventSlug: string | null;
+  walletAddress?: string | null;
+  balance?: number | null;
+  recommendedDirection?: "UP" | "DOWN" | null;
   onBetPlaced: (bet: { direction: string; amount: number }) => void;
+  onMarketExpired?: () => void;
   disabled?: boolean;
 };
 
@@ -22,20 +32,30 @@ export function BetButtons({
   polyProbUp,
   entryPrice,
   eventSlug,
+  walletAddress,
+  balance,
+  recommendedDirection,
   onBetPlaced,
+  onMarketExpired,
   disabled,
 }: BetButtonsProps) {
   const [direction, setDirection] = useState<"UP" | "DOWN" | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [customAmount, setCustomAmount] = useState("");
+  const [slippage, setSlippage] = useState(0.10);
+
+  const noWallet = !walletAddress;
+  const noBalance = balance !== null && balance !== undefined && balance < 1;
 
   async function placeBet(amount: number) {
-    if (!direction || disabled) return;
+    if (!direction || disabled || noWallet) return;
     setLoading(true);
+    setError(null);
 
     try {
       // Get Telegram user data
-      const tg = (window as unknown as { Telegram?: { WebApp?: { initDataUnsafe: { user?: { id: number; username?: string; first_name: string } } } } })
-        .Telegram?.WebApp;
+      const tg = (window as any).Telegram?.WebApp;
       const user = tg?.initDataUnsafe?.user;
 
       const res = await fetch("/api/bet", {
@@ -53,6 +73,7 @@ export function BetButtons({
           poly_prob_up: polyProbUp,
           entry_price: entryPrice,
           event_slug: eventSlug,
+          slippage,
         }),
       });
 
@@ -63,16 +84,24 @@ export function BetButtons({
 
       // Haptic feedback
       try {
-        (window as unknown as { Telegram?: { WebApp?: { HapticFeedback: { notificationOccurred: (t: string) => void } } } })
-          .Telegram?.WebApp?.HapticFeedback?.notificationOccurred("success");
+        (window as any).Telegram?.WebApp?.HapticFeedback?.notificationOccurred("success");
       } catch {}
 
       setDirection(null);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Bet failed:", err);
+      const msg = err.message || "Order failed";
+      // Auto-refresh markets if expired
+      if (msg.toLowerCase().includes("expired") || msg.toLowerCase().includes("loading latest")) {
+        setError("Market expired — loading latest markets...");
+        setDirection(null);
+        onMarketExpired?.();
+        setTimeout(() => setError(null), 3000);
+      } else {
+        setError(msg);
+      }
       try {
-        (window as unknown as { Telegram?: { WebApp?: { HapticFeedback: { notificationOccurred: (t: string) => void } } } })
-          .Telegram?.WebApp?.HapticFeedback?.notificationOccurred("error");
+        (window as any).Telegram?.WebApp?.HapticFeedback?.notificationOccurred("error");
       } catch {}
     } finally {
       setLoading(false);
@@ -84,42 +113,115 @@ export function BetButtons({
       {/* Direction buttons */}
       <div className="grid grid-cols-2 gap-2">
         <button
-          onClick={() => setDirection("UP")}
-          disabled={disabled || loading}
-          className={`py-3 rounded-xl font-bold text-sm transition-all ${
+          onClick={() => { setDirection("UP"); setError(null); }}
+          disabled={disabled || loading || noWallet}
+          className={`relative py-3.5 rounded-xl font-bold text-sm transition-all active:translate-y-px ${
             direction === "UP"
-              ? "bg-up text-white scale-[1.02] shadow-lg shadow-up/30"
-              : "bg-up/10 text-up border border-up/20"
-          } ${disabled ? "opacity-50" : ""}`}
+              ? "bg-up text-ink scale-[1.02] shadow-lg shadow-up/30 ring-2 ring-up/40"
+              : "bg-up text-ink shadow-sm hover:shadow-md hover:shadow-up/20"
+          } ${disabled || noWallet ? "opacity-50" : ""}`}
         >
           UP
+          {recommendedDirection === "UP" && (
+            <span className="absolute -top-1.5 -right-1.5 bg-up-dark text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-sm">
+              EDGE
+            </span>
+          )}
         </button>
         <button
-          onClick={() => setDirection("DOWN")}
-          disabled={disabled || loading}
-          className={`py-3 rounded-xl font-bold text-sm transition-all ${
+          onClick={() => { setDirection("DOWN"); setError(null); }}
+          disabled={disabled || loading || noWallet}
+          className={`relative py-3.5 rounded-xl font-bold text-sm transition-all active:translate-y-px ${
             direction === "DOWN"
-              ? "bg-down text-white scale-[1.02] shadow-lg shadow-down/30"
-              : "bg-down/10 text-down border border-down/20"
-          } ${disabled ? "opacity-50" : ""}`}
+              ? "bg-down text-white scale-[1.02] shadow-lg shadow-down/30 ring-2 ring-down/40"
+              : "bg-down/90 text-white shadow-sm hover:shadow-md hover:shadow-down/20"
+          } ${disabled || noWallet ? "opacity-50" : ""}`}
         >
           DOWN
+          {recommendedDirection === "DOWN" && (
+            <span className="absolute -top-1.5 -right-1.5 bg-down text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-sm">
+              EDGE
+            </span>
+          )}
         </button>
       </div>
 
-      {/* Amount buttons — show only when direction selected */}
-      {direction && (
-        <div className="grid grid-cols-4 gap-2 animate-slide-up">
-          {AMOUNTS.map((amt) => (
+      {/* No wallet message */}
+      {noWallet && (
+        <p className="text-xs text-muted text-center">Setting up wallet...</p>
+      )}
+
+      {/* No balance warning */}
+      {!noWallet && noBalance && direction && (
+        <p className="text-xs text-down text-center font-medium">
+          Deposit USDC (Polygon) to your wallet to trade
+        </p>
+      )}
+
+      {/* Error message */}
+      {error && (
+        <p className="text-xs text-down text-center font-medium">{error}</p>
+      )}
+
+      {/* Amount + slippage — show only when direction selected */}
+      {direction && !noWallet && (
+        <div className="space-y-2 animate-fade-up">
+          {/* Slippage selector */}
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] text-muted font-semibold">Slippage:</span>
+            <div className="flex gap-1 flex-1">
+              {SLIPPAGE_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => setSlippage(opt.value)}
+                  className={`flex-1 py-1 rounded-md text-[10px] font-bold transition-all ${
+                    slippage === opt.value
+                      ? "bg-ink text-white"
+                      : "bg-ink/5 text-muted border border-ink/8"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-4 gap-2">
+            {AMOUNTS.map((amt) => (
+              <button
+                key={amt}
+                onClick={() => placeBet(amt)}
+                disabled={loading || noBalance}
+                className="py-2 bg-ink/5 hover:bg-ink/10 text-ink rounded-lg text-sm font-mono font-bold transition-all border border-ink/8 disabled:opacity-50 active:translate-y-px"
+              >
+                {loading ? "..." : `$${amt}`}
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <input
+              type="number"
+              inputMode="decimal"
+              placeholder="Custom $"
+              min={5}
+              max={100}
+              value={customAmount}
+              onChange={(e) => setCustomAmount(e.target.value)}
+              disabled={loading || noBalance}
+              className="flex-1 py-2 px-3 bg-ink/5 text-ink rounded-lg text-sm font-mono font-bold border border-ink/8 placeholder:text-muted/50 disabled:opacity-50 outline-none focus:ring-2 focus:ring-ink/20"
+            />
             <button
-              key={amt}
-              onClick={() => placeBet(amt)}
-              disabled={loading}
-              className="py-2 bg-tg-button/10 hover:bg-tg-button/20 text-tg-text rounded-lg text-sm font-medium transition-all border border-tg-button/20 disabled:opacity-50"
+              onClick={() => {
+                const amt = parseFloat(customAmount);
+                if (amt >= 5 && amt <= 100) placeBet(amt);
+                else setError("Custom amount must be $5–$100");
+              }}
+              disabled={loading || noBalance || !customAmount}
+              className="px-4 py-2 bg-ink text-white rounded-lg text-sm font-bold disabled:opacity-50 active:translate-y-px"
             >
-              {loading ? "..." : `$${amt}`}
+              {loading ? "..." : "Go"}
             </button>
-          ))}
+          </div>
         </div>
       )}
     </div>

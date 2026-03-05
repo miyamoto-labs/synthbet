@@ -20,6 +20,7 @@ export type SynthInsight = {
 
 export type MarketData = {
   asset: string;
+  "15min": SynthInsight | null;
   hourly: SynthInsight | null;
   daily: SynthInsight | null;
 };

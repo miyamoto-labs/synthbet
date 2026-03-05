@@ -4,33 +4,41 @@ const SYNTH_API_KEY = process.env.SYNTH_API_KEY!;
 const SYNTH_BASE_URL = "https://api.synthdata.co";
 const ASSETS = ["BTC", "ETH", "SOL"] as const;
 
-async function fetchSynthInsight(asset: string, timeframe: "hourly" | "daily") {
-  const res = await fetch(
-    `${SYNTH_BASE_URL}/insights/polymarket/up-down/${timeframe}?asset=${asset}`,
-    {
-      headers: { Authorization: `Apikey ${SYNTH_API_KEY}` },
-      next: { revalidate: 30 }, // cache for 30s
-    }
-  );
+async function fetchSynthInsight(asset: string, timeframe: "15min" | "hourly" | "daily") {
+  // Use Next.js fetch cache — persists across serverless invocations
+  const revalidate = timeframe === "15min" ? 30 : 120;
 
-  if (!res.ok) {
-    console.error(`Synth API error for ${asset}/${timeframe}: ${res.status}`);
+  try {
+    const res = await fetch(
+      `${SYNTH_BASE_URL}/insights/polymarket/up-down/${timeframe}?asset=${asset}`,
+      {
+        headers: { Authorization: `Apikey ${SYNTH_API_KEY}` },
+        next: { revalidate },
+      } as any,
+    );
+
+    if (!res.ok) {
+      console.error(`Synth API error for ${asset}/${timeframe}: ${res.status}`);
+      return null;
+    }
+
+    return res.json();
+  } catch (err) {
+    console.error(`Synth API fetch error for ${asset}/${timeframe}:`, err);
     return null;
   }
-
-  return res.json();
 }
 
 export async function GET() {
   try {
-    // Fetch all assets + timeframes in parallel
     const results = await Promise.all(
       ASSETS.map(async (asset) => {
-        const [hourly, daily] = await Promise.all([
+        const [min15, hourly, daily] = await Promise.all([
+          fetchSynthInsight(asset, "15min"),
           fetchSynthInsight(asset, "hourly"),
           fetchSynthInsight(asset, "daily"),
         ]);
-        return { asset, hourly, daily };
+        return { asset, "15min": min15, hourly, daily };
       })
     );
 
