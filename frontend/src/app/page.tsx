@@ -542,17 +542,69 @@ export default function Home() {
 
   if (showSplash) {
     return (
-      <div className="fixed inset-0 bg-bg flex flex-col items-center justify-center z-50">
-        <h1 className="text-4xl font-bold tracking-tight text-ink animate-scale-in">
-          SynthBet
+      <div className="fixed inset-0 bg-bg flex flex-col items-center justify-center z-50 overflow-hidden">
+        {/* Animated price line drawing behind logo */}
+        <svg
+          viewBox="0 0 400 120"
+          className="absolute w-[120%] opacity-0 animate-splash-line"
+          style={{ top: "38%" }}
+          preserveAspectRatio="none"
+        >
+          <path
+            d="M0 90 Q40 85 80 70 T160 55 T240 35 T320 50 T400 20"
+            fill="none"
+            stroke="url(#splashGrad)"
+            strokeWidth="2"
+            strokeLinecap="round"
+            className="animate-splash-draw"
+          />
+          <defs>
+            <linearGradient id="splashGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#00e676" stopOpacity="0" />
+              <stop offset="30%" stopColor="#00e676" stopOpacity="0.4" />
+              <stop offset="70%" stopColor="#00e676" stopOpacity="0.3" />
+              <stop offset="100%" stopColor="#00e676" stopOpacity="0" />
+            </linearGradient>
+          </defs>
+        </svg>
+
+        {/* Glow behind title */}
+        <div
+          className="absolute w-48 h-48 rounded-full opacity-0 animate-splash-glow"
+          style={{ background: "radial-gradient(circle, rgba(0,230,118,0.12) 0%, transparent 70%)" }}
+        />
+
+        {/* Title with shimmer */}
+        <h1 className="text-5xl font-bold tracking-tight text-ink animate-scale-in relative">
+          <span className="relative">
+            Synth
+            <span className="text-up-dark">Bet</span>
+            <span className="absolute inset-0 animate-splash-shimmer bg-gradient-to-r from-transparent via-white/20 to-transparent bg-[length:200%_100%]" />
+          </span>
         </h1>
-        <p className="text-sm font-mono text-muted mt-2 animate-fade-up" style={{ animationDelay: "0.2s" }}>
-          AI-powered predictions
+
+        {/* Subtitle — staggered */}
+        <p
+          className="text-sm font-mono text-muted mt-3 opacity-0 animate-fade-up"
+          style={{ animationDelay: "0.4s", animationFillMode: "forwards" }}
+        >
+          AI-powered crypto predictions
         </p>
-        <div className="flex gap-1.5 mt-6">
-          <span className="w-2 h-2 rounded-full bg-ink/30 animate-pulse-dot" />
-          <span className="w-2 h-2 rounded-full bg-ink/30 animate-pulse-dot" style={{ animationDelay: "0.3s" }} />
-          <span className="w-2 h-2 rounded-full bg-ink/30 animate-pulse-dot" style={{ animationDelay: "0.6s" }} />
+
+        {/* Tagline — staggered */}
+        <p
+          className="text-[11px] font-mono text-muted/60 mt-1 opacity-0 animate-fade-up"
+          style={{ animationDelay: "0.7s", animationFillMode: "forwards" }}
+        >
+          BTC &middot; ETH &middot; SOL
+        </p>
+
+        {/* Loading bar instead of dots */}
+        <div
+          className="mt-8 w-32 h-0.5 rounded-full bg-ink/10 overflow-hidden opacity-0 animate-fade-up"
+          style={{ animationDelay: "0.9s", animationFillMode: "forwards" }}
+        >
+          <div className="h-full rounded-full bg-up animate-splash-progress" />
         </div>
       </div>
     );

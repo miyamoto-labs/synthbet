@@ -265,6 +265,61 @@ html, body, #__next {
   animation: shimmer 1.5s infinite;
 }
 
+/* Splash screen animations */
+@keyframes splashDraw {
+  0% { stroke-dashoffset: 600; }
+  100% { stroke-dashoffset: 0; }
+}
+
+@keyframes splashLine {
+  0% { opacity: 0; }
+  20% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes splashGlow {
+  0% { opacity: 0; transform: scale(0.5); }
+  30% { opacity: 1; transform: scale(1); }
+  80% { opacity: 1; }
+  100% { opacity: 0; transform: scale(1.2); }
+}
+
+@keyframes splashShimmer {
+  0% { background-position: -200% 0; }
+  40% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes splashProgress {
+  0% { width: 0%; }
+  60% { width: 70%; }
+  100% { width: 100%; }
+}
+
+.animate-splash-draw {
+  stroke-dasharray: 600;
+  stroke-dashoffset: 600;
+  animation: splashDraw 1.8s ease-out 0.2s forwards;
+}
+
+.animate-splash-line {
+  animation: splashLine 2.2s ease-out forwards;
+}
+
+.animate-splash-glow {
+  animation: splashGlow 2.2s ease-out forwards;
+}
+
+.animate-splash-shimmer {
+  background-size: 200% 100%;
+  animation: splashShimmer 2s ease-in-out 0.3s;
+}
+
+.animate-splash-progress {
+  animation: splashProgress 2s ease-out forwards;
+}
+
 /* Hide scrollbar but keep scroll */
 .no-scrollbar {
   -ms-overflow-style: none;
