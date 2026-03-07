@@ -6,6 +6,9 @@ import { MarketCard } from "@/components/MarketCard";
 import { Portfolio } from "@/components/Portfolio";
 import { Leaderboard } from "@/components/Leaderboard";
 import { LiveBetView } from "@/components/LiveBetView";
+import type { LiveBet } from "@/components/LiveBetView";
+import { playBetPlaced, playWin, playLose } from "@/lib/sounds";
+import { Confetti } from "@/components/Confetti";
 
 type Tab = "markets" | "portfolio" | "leaderboard";
 
@@ -95,6 +98,7 @@ function SignalBanner({ deepLink, walletAddress, balance, onBetPlaced }: {
       if (!res.ok) throw new Error(data.error);
 
       setBetDone(true);
+      playBetPlaced();
       onBetPlaced({ asset: asset!, direction: dir!, amount, timeframe: tf || "15m", entryPrice: entryPrice || 0 });
       try { (window as any).Telegram?.WebApp?.HapticFeedback?.notificationOccurred("success"); } catch {}
     } catch (err: any) {
@@ -181,15 +185,11 @@ export default function Home() {
   const [withdrawResult, setWithdrawResult] = useState<string | null>(null);
   const [withdrawError, setWithdrawError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [liveBet, setLiveBet] = useState<{
-    asset: string;
-    direction: "UP" | "DOWN";
-    amount: number;
-    timeframe: string;
-    entryPrice: number;
-    endTime?: string;
-  } | null>(null);
+  const [liveBets, setLiveBets] = useState<LiveBet[]>([]);
   const [liveBetOpen, setLiveBetOpen] = useState(false);
+  const [resultToast, setResultToast] = useState<{ type: "won" | "lost"; text: string } | null>(null);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const knownResolvedIds = useRef(new Set<number>());
 
   const getTelegramUser = useCallback(() => {
     try {
@@ -338,22 +338,64 @@ export default function Home() {
     return () => clearInterval(balanceInterval);
   }, [walletAddress, fetchBalance]);
 
-  // Auto-clear liveBet pill 5 minutes after market end
+  // Poll for resolved bets — play win/lose sounds globally
+  const checkResolvedBets = useCallback(async () => {
+    const user = getTelegramUser();
+    if (!user?.id) return;
+    try {
+      const res = await fetch(`/api/bets?telegram_id=${user.id}&status=resolved&limit=5`);
+      if (!res.ok) return;
+      const data = await res.json();
+      const bets = data.bets || [];
+      for (const bet of bets) {
+        if (knownResolvedIds.current.has(bet.id)) continue;
+        knownResolvedIds.current.add(bet.id);
+        const won = bet.result === "won";
+        const pnl = Math.abs(bet.pnl || bet.amount);
+        const text = won
+          ? `${bet.asset} ${bet.direction} WON! +$${pnl}`
+          : `${bet.asset} ${bet.direction} lost -$${pnl}`;
+        if (won) {
+          playWin();
+          setShowConfetti(true);
+          setTimeout(() => setShowConfetti(false), 3500);
+        } else {
+          playLose();
+        }
+        setResultToast({ type: won ? "won" : "lost", text });
+        setTimeout(() => setResultToast(null), 4000);
+        try {
+          (window as any).Telegram?.WebApp?.HapticFeedback?.notificationOccurred(won ? "success" : "error");
+        } catch {}
+        break; // one at a time so sounds don't overlap
+      }
+    } catch {}
+  }, [getTelegramUser]);
+
   useEffect(() => {
-    if (!liveBet?.endTime) return;
-    const end = new Date(liveBet.endTime).getTime();
-    const msUntilClear = end + 5 * 60_000 - Date.now();
-    if (msUntilClear <= 0) {
-      setLiveBet(null);
-      setLiveBetOpen(false);
-      return;
-    }
-    const timer = setTimeout(() => {
-      setLiveBet(null);
-      setLiveBetOpen(false);
-    }, msUntilClear);
-    return () => clearTimeout(timer);
-  }, [liveBet?.endTime]);
+    if (!walletAddress) return;
+    // Initial check after short delay
+    const initial = setTimeout(checkResolvedBets, 5000);
+    const interval = setInterval(checkResolvedBets, 30_000);
+    return () => { clearTimeout(initial); clearInterval(interval); };
+  }, [walletAddress, checkResolvedBets]);
+
+  // Auto-remove expired bets from liveBets after 5 minutes
+  useEffect(() => {
+    if (liveBets.length === 0) return;
+    const interval = setInterval(() => {
+      const now = Date.now();
+      setLiveBets((prev) => {
+        const filtered = prev.filter((b) => {
+          if (!b.endTime) return true;
+          return now < new Date(b.endTime).getTime() + 5 * 60_000;
+        });
+        if (filtered.length === 0) setLiveBetOpen(false);
+        return filtered;
+      });
+    }, 10_000);
+    return () => clearInterval(interval);
+  }, [liveBets.length]);
 
   const showSplash = loading || !splashDone;
 
@@ -383,14 +425,17 @@ export default function Home() {
     const tfKey = info.timeframe === "15m" ? "15min" : info.timeframe === "1h" ? "hourly" : "daily";
     const insight = market?.[tfKey as keyof typeof market] as any;
 
-    setLiveBet({
+    const newBet: LiveBet = {
+      id: `${info.asset}-${info.timeframe}-${Date.now()}`,
       asset: info.asset,
       direction: info.direction as "UP" | "DOWN",
       amount: info.amount,
       timeframe: info.timeframe,
       entryPrice: info.entryPrice || insight?.current_price || 0,
       endTime: info.endTime || insight?.event_end_time,
-    });
+    };
+
+    setLiveBets((prev) => [...prev, newBet]);
     setLiveBetOpen(true);
   }
 
@@ -494,6 +539,21 @@ export default function Home() {
 
   return (
     <main className="min-h-screen pb-20">
+      {/* Global confetti */}
+      <Confetti active={showConfetti} />
+
+      {/* Global result toast */}
+      {resultToast && (
+        <div className={`fixed top-6 left-4 right-4 z-[70] rounded-xl px-4 py-3 shadow-lg border animate-slide-down text-center ${
+          resultToast.type === "won"
+            ? "bg-up/95 border-up text-ink"
+            : "bg-down/95 border-down text-white"
+        }`}>
+          <div className="text-sm font-bold">{resultToast.type === "won" ? "You Won!" : "You Lost"}</div>
+          <div className="text-xs font-mono mt-0.5 opacity-80">{resultToast.text}</div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="px-4 pt-6 pb-3">
         <div className="flex items-center justify-between">
@@ -570,7 +630,7 @@ export default function Home() {
           ).map(({ key, label }) => (
             <button
               key={key}
-              onClick={() => setTab(key)}
+              onClick={() => { setTab(key); if (key === "portfolio") checkResolvedBets(); }}
               className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${
                 tab === key
                   ? "bg-card text-ink shadow-sm"
@@ -650,10 +710,11 @@ export default function Home() {
                   if (b.asset === dl && a.asset !== dl) return 1;
                   return 0;
                 })
-                .map((m) => (
+                .map((m, i) => (
                 <MarketCard
                   key={m.asset}
                   asset={m.asset}
+                  index={i}
                   min15={m["15min"]}
                   hourly={m.hourly}
                   daily={m.daily}
@@ -739,34 +800,25 @@ export default function Home() {
         </div>
       )}
       {/* Live Bet View */}
-      {liveBet && liveBetOpen && (
+      {liveBets.length > 0 && liveBetOpen && (
         <LiveBetView
-          asset={liveBet.asset}
-          direction={liveBet.direction}
-          amount={liveBet.amount}
-          timeframe={liveBet.timeframe}
-          entryPrice={liveBet.entryPrice}
-          endTime={liveBet.endTime}
+          bets={liveBets}
           onClose={() => setLiveBetOpen(false)}
           telegramId={getTelegramUser()?.id}
         />
       )}
 
-      {/* Floating pill to reopen live bet */}
-      {liveBet && !liveBetOpen && (
+      {/* Floating pill to reopen live bets */}
+      {liveBets.length > 0 && !liveBetOpen && (
         <button
           onClick={() => setLiveBetOpen(true)}
-          className={`fixed bottom-24 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 px-4 py-2.5 rounded-full shadow-lg border animate-fade-up ${
-            liveBet.direction === "UP"
-              ? "bg-up/90 border-up text-ink"
-              : "bg-down/90 border-down text-white"
-          }`}
+          className="fixed bottom-24 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 px-4 py-2.5 rounded-full shadow-lg border animate-fade-up bg-ink/90 border-white/20 text-white"
         >
-          <span className="w-2 h-2 rounded-full bg-white/80 animate-pulse" />
+          <span className="w-2 h-2 rounded-full bg-up animate-pulse" />
           <span className="text-xs font-bold font-mono">
-            {liveBet.asset} {liveBet.direction} ${liveBet.amount}
+            {liveBets.length} active bet{liveBets.length > 1 ? "s" : ""}
           </span>
-          <span className="text-[10px] opacity-80">Tap to watch</span>
+          <span className="text-[10px] text-white/60">Tap to watch</span>
         </button>
       )}
 

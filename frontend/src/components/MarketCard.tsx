@@ -5,6 +5,7 @@ import type { SynthInsight } from "@/lib/synth";
 import { formatPrice, formatProb, computeEdge } from "@/lib/synth";
 import { ProbabilityBar } from "./ProbabilityBar";
 import { ProbChart } from "./ProbChart";
+import { CandleChart } from "./CandleChart";
 import { BetButtons } from "./BetButtons";
 
 const ASSET_ICONS: Record<string, string> = {
@@ -35,6 +36,7 @@ type MarketCardProps = {
   walletAddress?: string | null;
   balance?: number | null;
   initialTimeframe?: "15m" | "1h" | "daily";
+  index?: number;
 };
 
 function Countdown({ endTime }: { endTime: string }) {
@@ -86,7 +88,7 @@ function Countdown({ endTime }: { endTime: string }) {
   );
 }
 
-export function MarketCard({ asset, min15, hourly, daily, onBetPlaced, onMarketExpired, walletAddress, balance, initialTimeframe }: MarketCardProps) {
+export function MarketCard({ asset, min15, hourly, daily, onBetPlaced, onMarketExpired, walletAddress, balance, initialTimeframe, index = 0 }: MarketCardProps) {
   const [timeframe, setTimeframe] = useState<"15m" | "1h" | "daily">(initialTimeframe || "15m");
   const [showSuccess, setShowSuccess] = useState(false);
 
@@ -100,10 +102,18 @@ export function MarketCard({ asset, min15, hourly, daily, onBetPlaced, onMarketE
     : hourly ? "1h" as const
     : "daily" as const;
 
-  // Check if the market window has expired
+  // Check if the market window has expired — auto-refresh to get new market
   const isExpired = insight.event_end_time
     ? Date.now() >= new Date(insight.event_end_time).getTime()
     : false;
+
+  useEffect(() => {
+    if (isExpired && onMarketExpired) {
+      // New market should already be live — refresh after short delay
+      const timer = setTimeout(() => onMarketExpired(), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [isExpired, onMarketExpired]);
 
   const edge = computeEdge(insight.synth_probability_up, insight.polymarket_probability_up);
   const absEdge = Math.abs(edge);
@@ -119,7 +129,10 @@ export function MarketCard({ asset, min15, hourly, daily, onBetPlaced, onMarketE
   const tfLabel = activeTf === "15m" ? "15 Min" : activeTf === "1h" ? "Hourly" : "Daily";
 
   return (
-    <div className="bg-card rounded-2xl p-4 space-y-4 animate-fade-up shadow-sm border border-ink/5">
+    <div
+      className="bg-card rounded-2xl p-4 space-y-4 animate-card-enter shadow-sm border border-ink/5"
+      style={{ animationDelay: `${index * 0.1}s` }}
+    >
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -159,8 +172,8 @@ export function MarketCard({ asset, min15, hourly, daily, onBetPlaced, onMarketE
       {hasTradeableEdge ? (
         <div className={`rounded-xl px-3 py-2.5 flex items-center gap-2.5 ${
           recommendedDirection === "UP"
-            ? "bg-up/8 border border-up/15"
-            : "bg-down/8 border border-down/15"
+            ? "bg-up/8 border border-up/15 animate-edge-glow-up"
+            : "bg-down/8 border border-down/15 animate-edge-glow-down"
         }`}>
           <span className={`w-2 h-2 rounded-full animate-pulse-dot ${
             recommendedDirection === "UP" ? "bg-up" : "bg-down"
@@ -201,6 +214,9 @@ export function MarketCard({ asset, min15, hourly, daily, onBetPlaced, onMarketE
           );
         })}
       </div>
+
+      {/* Price candle chart */}
+      <CandleChart asset={asset} timeframe={activeTf} />
 
       {/* Probability chart */}
       <ProbChart
@@ -249,9 +265,9 @@ export function MarketCard({ asset, min15, hourly, daily, onBetPlaced, onMarketE
 
       {/* Bet buttons or expired state */}
       {isExpired ? (
-        <div className="rounded-xl px-3 py-3 bg-ink/5 border border-ink/8 text-center">
+        <div className="rounded-xl px-3 py-3 bg-ink/5 border border-ink/8 text-center animate-pulse">
           <span className="text-sm text-muted font-medium">
-            Market window ended — waiting for next {activeTf === "15m" ? "15-min" : activeTf === "1h" ? "hourly" : "daily"} window
+            Loading next market...
           </span>
         </div>
       ) : (

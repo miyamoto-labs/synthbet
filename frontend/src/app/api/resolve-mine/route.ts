@@ -10,6 +10,7 @@ export const maxDuration = 60;
 
 const GAMMA_URL = 'https://gamma-api.polymarket.com';
 const RELAYER_URL = 'https://relayer-v2.polymarket.com/';
+const DRY_MODE = process.env.DRY_MODE?.trim() === 'true';
 const CTF_TOKEN = '0x4D97DCd97eC945f40cF65F87097ACe5EA0476045';
 const USDC_TOKEN = '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174';
 const ZERO_HASH = '0x0000000000000000000000000000000000000000000000000000000000000000';
@@ -168,8 +169,8 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // Auto-redeem winning positions
-  if (conditionIdsToRedeem.size > 0 && user.encrypted_private_key) {
+  // Auto-redeem winning positions (skip in dry mode — no real positions)
+  if (conditionIdsToRedeem.size > 0 && user.encrypted_private_key && !DRY_MODE) {
     try {
       const privateKey = decrypt(user.encrypted_private_key) as `0x${string}`;
       const account = privateKeyToAccount(privateKey);

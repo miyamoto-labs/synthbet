@@ -9,6 +9,7 @@ export const dynamic = 'force-dynamic';
 const GAMMA_URL = 'https://gamma-api.polymarket.com';
 const CLOB_URL = 'https://clob.polymarket.com';
 const DEFAULT_SLIPPAGE = 0.15;
+const DRY_MODE = process.env.DRY_MODE?.trim() === 'true';
 
 export async function POST(req: NextRequest) {
   try {
@@ -149,76 +150,83 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Calculated shares is zero — price too high' }, { status: 400 });
     }
 
-    // --- Create CLOB client ---
-    const builderConfig = await getBuilderConfig();
-    const clobClient = await createServerClobClient(
-      user.encrypted_private_key,
-      user.clob_api_key,
-      user.clob_api_secret,
-      user.clob_api_passphrase,
-      builderConfig,
-      user.safe_address,
-    );
+    let orderId: string | null = null;
 
-    // --- Place order ---
-    // createOrder calls the CLOB API (geoblocked) so route through proxy
-    const { Side } = await import('@polymarket/clob-client');
-    const { ProxyAgent, setGlobalDispatcher, getGlobalDispatcher } = await import('undici');
+    if (DRY_MODE) {
+      // --- DRY MODE: skip real CLOB order, simulate success ---
+      orderId = `dry-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      console.log(`[Bet] DRY MODE: ${asset} ${direction} $${amount} @ ${cappedPrice} (${shares} shares) slug=${event_slug}`);
+    } else {
+      // --- Create CLOB client ---
+      const builderConfig = await getBuilderConfig();
+      const clobClient = await createServerClobClient(
+        user.encrypted_private_key,
+        user.clob_api_key,
+        user.clob_api_secret,
+        user.clob_api_passphrase,
+        builderConfig,
+        user.safe_address,
+      );
 
-    const proxyUrl = process.env.CLOB_PROXY_URL;
-    let signedOrder: any;
+      // --- Place order ---
+      const { Side } = await import('@polymarket/clob-client');
+      const { ProxyAgent, setGlobalDispatcher, getGlobalDispatcher } = await import('undici');
 
-    if (proxyUrl) {
-      const parsed = new URL(proxyUrl);
-      const proxyOrigin = `${parsed.protocol}//${parsed.host}`;
-      const proxyToken = parsed.username
-        ? `Basic ${Buffer.from(`${decodeURIComponent(parsed.username)}:${decodeURIComponent(parsed.password)}`).toString('base64')}`
-        : undefined;
-      const agent = new ProxyAgent({ uri: proxyOrigin, token: proxyToken });
-      const originalDispatcher = getGlobalDispatcher();
-      setGlobalDispatcher(agent);
-      try {
+      const proxyUrl = process.env.CLOB_PROXY_URL;
+      let signedOrder: any;
+
+      if (proxyUrl) {
+        const parsed = new URL(proxyUrl);
+        const proxyOrigin = `${parsed.protocol}//${parsed.host}`;
+        const proxyToken = parsed.username
+          ? `Basic ${Buffer.from(`${decodeURIComponent(parsed.username)}:${decodeURIComponent(parsed.password)}`).toString('base64')}`
+          : undefined;
+        const agent = new ProxyAgent({ uri: proxyOrigin, token: proxyToken });
+        const originalDispatcher = getGlobalDispatcher();
+        setGlobalDispatcher(agent);
+        try {
+          signedOrder = await clobClient.createOrder({
+            tokenID: tokenId,
+            side: Side.BUY,
+            size: shares,
+            price: cappedPrice,
+          });
+        } finally {
+          setGlobalDispatcher(originalDispatcher);
+        }
+      } else {
         signedOrder = await clobClient.createOrder({
           tokenID: tokenId,
           side: Side.BUY,
           size: shares,
           price: cappedPrice,
         });
-      } finally {
-        setGlobalDispatcher(originalDispatcher);
       }
-    } else {
-      signedOrder = await clobClient.createOrder({
-        tokenID: tokenId,
-        side: Side.BUY,
-        size: shares,
-        price: cappedPrice,
+
+      // Submit via residential proxy to bypass geoblock
+      const apiKey = decrypt(user.clob_api_key);
+      const apiSecret = decrypt(user.clob_api_secret);
+      const apiPassphrase = decrypt(user.clob_api_passphrase);
+
+      const result = await submitOrderToCLOB({
+        signedOrder,
+        apiKey,
+        apiSecret,
+        apiPassphrase,
+        walletAddress: user.wallet_address,
+        orderType: 'GTC',
       });
+
+      if (!result.ok) {
+        console.error('[Bet] CLOB order failed:', result.status, result.data);
+        return NextResponse.json(
+          { error: `Order rejected: ${result.data?.error || result.data?.message || 'unknown error'}` },
+          { status: 400 }
+        );
+      }
+
+      orderId = result.data?.orderID || result.data?.id || null;
     }
-
-    // Submit via residential proxy to bypass geoblock
-    const apiKey = decrypt(user.clob_api_key);
-    const apiSecret = decrypt(user.clob_api_secret);
-    const apiPassphrase = decrypt(user.clob_api_passphrase);
-
-    const result = await submitOrderToCLOB({
-      signedOrder,
-      apiKey,
-      apiSecret,
-      apiPassphrase,
-      walletAddress: user.wallet_address,
-      orderType: 'GTC',
-    });
-
-    if (!result.ok) {
-      console.error('[Bet] CLOB order failed:', result.status, result.data);
-      return NextResponse.json(
-        { error: `Order rejected: ${result.data?.error || result.data?.message || 'unknown error'}` },
-        { status: 400 }
-      );
-    }
-
-    const orderId = result.data?.orderID || result.data?.id || null;
 
     // --- Log trade ---
     const { data: bet, error: betErr } = await supabase

@@ -12,6 +12,7 @@ const GAMMA_URL = 'https://gamma-api.polymarket.com';
 const CRON_SECRET = process.env.CRON_SECRET;
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const RELAYER_URL = 'https://relayer-v2.polymarket.com/';
+const DRY_MODE = process.env.DRY_MODE?.trim() === 'true';
 
 const CTF_TOKEN = '0x4D97DCd97eC945f40cF65F87097ACe5EA0476045';
 const NEG_RISK_ADPT = '0xd91E80cF2E7be2e162c6513ceD06f1dD0dA35296';
@@ -223,12 +224,16 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // Auto-redeem winning positions
-  for (const [userId, redemption] of userRedemptions) {
-    for (const conditionId of redemption.conditionIds) {
-      const success = await redeemPositions(redemption.encryptedPrivateKey, conditionId);
-      if (success) redeemed++;
+  // Auto-redeem winning positions (skip in dry mode)
+  if (!DRY_MODE) {
+    for (const [userId, redemption] of userRedemptions) {
+      for (const conditionId of redemption.conditionIds) {
+        const success = await redeemPositions(redemption.encryptedPrivateKey, conditionId);
+        if (success) redeemed++;
+      }
     }
+  } else {
+    console.log(`[Resolve] DRY MODE: skipping redeem for ${userRedemptions.size} users`);
   }
 
   // Send Telegram notifications

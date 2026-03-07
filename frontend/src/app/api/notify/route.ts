@@ -120,10 +120,15 @@ export async function GET(req: Request) {
         const absEdge = Math.abs(edge);
 
         if (absEdge >= EDGE_THRESHOLD) {
-          // Skip if market has already expired or expires within 2 minutes
+          // Skip if market doesn't have enough time left to trade
+          // 15min markets: need 5+ min remaining, hourly/daily: need 15+ min
           if (insight.event_end_time) {
-            const endMs = new Date(insight.event_end_time).getTime();
-            if (endMs - Date.now() < 120_000) continue;
+            const msRemaining = new Date(insight.event_end_time).getTime() - Date.now();
+            const minRequired = TIMEFRAMES[i] === "15min" ? 5 * 60_000 : 15 * 60_000;
+            if (msRemaining < minRequired) {
+              console.log(`[Notify] Skipping ${asset} ${TIMEFRAMES[i]}: only ${Math.round(msRemaining / 60000)}m remaining`);
+              continue;
+            }
           }
 
           const tradeDirection = edge > 0 ? "UP" : "DOWN";

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { playBetPlaced, playChipToss, warmUpAudio } from "@/lib/sounds";
 
 const AMOUNTS = [5, 10, 25, 50];
 const SLIPPAGE_OPTIONS = [
@@ -44,6 +45,8 @@ export function BetButtons({
   const [error, setError] = useState<string | null>(null);
   const [customAmount, setCustomAmount] = useState("");
   const [slippage, setSlippage] = useState(0.10);
+  const [chipFly, setChipFly] = useState(false);
+  const [bounceDir, setBounceDir] = useState<"UP" | "DOWN" | null>(null);
 
   const noWallet = !walletAddress;
   const noBalance = balance !== null && balance !== undefined && balance < 1;
@@ -82,7 +85,8 @@ export function BetButtons({
 
       onBetPlaced({ direction, amount });
 
-      // Haptic feedback
+      // Sound + haptic feedback
+      playBetPlaced();
       try {
         (window as any).Telegram?.WebApp?.HapticFeedback?.notificationOccurred("success");
       } catch {}
@@ -113,9 +117,11 @@ export function BetButtons({
       {/* Direction buttons */}
       <div className="grid grid-cols-2 gap-2">
         <button
-          onClick={() => { setDirection("UP"); setError(null); }}
+          onClick={() => { warmUpAudio(); playChipToss(); setDirection("UP"); setBounceDir("UP"); setTimeout(() => setBounceDir(null), 400); setError(null); }}
           disabled={disabled || loading || noWallet}
-          className={`relative py-3.5 rounded-xl font-bold text-sm transition-all active:translate-y-px ${
+          className={`relative py-3.5 rounded-xl font-bold text-sm transition-all ${
+            bounceDir === "UP" ? "animate-spring" : ""
+          } ${
             direction === "UP"
               ? "bg-up text-ink scale-[1.02] shadow-lg shadow-up/30 ring-2 ring-up/40"
               : "bg-up text-ink shadow-sm hover:shadow-md hover:shadow-up/20"
@@ -129,9 +135,11 @@ export function BetButtons({
           )}
         </button>
         <button
-          onClick={() => { setDirection("DOWN"); setError(null); }}
+          onClick={() => { warmUpAudio(); playChipToss(); setDirection("DOWN"); setBounceDir("DOWN"); setTimeout(() => setBounceDir(null), 400); setError(null); }}
           disabled={disabled || loading || noWallet}
-          className={`relative py-3.5 rounded-xl font-bold text-sm transition-all active:translate-y-px ${
+          className={`relative py-3.5 rounded-xl font-bold text-sm transition-all ${
+            bounceDir === "DOWN" ? "animate-spring" : ""
+          } ${
             direction === "DOWN"
               ? "bg-down text-white scale-[1.02] shadow-lg shadow-down/30 ring-2 ring-down/40"
               : "bg-down/90 text-white shadow-sm hover:shadow-md hover:shadow-down/20"
@@ -186,17 +194,27 @@ export function BetButtons({
             </div>
           </div>
 
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-4 gap-2 relative">
             {AMOUNTS.map((amt) => (
               <button
                 key={amt}
-                onClick={() => placeBet(amt)}
+                onClick={() => { playChipToss(); setChipFly(true); setTimeout(() => setChipFly(false), 600); placeBet(amt); }}
                 disabled={loading || noBalance}
-                className="py-2 bg-ink/5 hover:bg-ink/10 text-ink rounded-lg text-sm font-mono font-bold transition-all border border-ink/8 disabled:opacity-50 active:translate-y-px"
+                className="py-2 bg-ink/5 hover:bg-ink/10 text-ink rounded-lg text-sm font-mono font-bold transition-all border border-ink/8 disabled:opacity-50 active:scale-95"
               >
                 {loading ? "..." : `$${amt}`}
               </button>
             ))}
+            {/* Flying chip */}
+            {chipFly && (
+              <div className="absolute left-1/2 bottom-0 -translate-x-1/2 pointer-events-none">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold animate-chip-fly ${
+                  direction === "UP" ? "bg-up text-ink" : "bg-down text-white"
+                }`}>
+                  $
+                </div>
+              </div>
+            )}
           </div>
           <div className="flex gap-2">
             <input
@@ -206,15 +224,15 @@ export function BetButtons({
               min={5}
               max={100}
               value={customAmount}
-              onChange={(e) => setCustomAmount(e.target.value)}
+              onChange={(e) => { playChipToss(); setCustomAmount(e.target.value); }}
               disabled={loading || noBalance}
               className="flex-1 py-2 px-3 bg-ink/5 text-ink rounded-lg text-sm font-mono font-bold border border-ink/8 placeholder:text-muted/50 disabled:opacity-50 outline-none focus:ring-2 focus:ring-ink/20"
             />
             <button
               onClick={() => {
                 const amt = parseFloat(customAmount);
-                if (amt >= 5 && amt <= 100) placeBet(amt);
-                else setError("Custom amount must be $5–$100");
+                if (amt >= 5 && amt <= 100) { playChipToss(); placeBet(amt); }
+                else setError("Custom amount must be $5\u2013$100");
               }}
               disabled={loading || noBalance || !customAmount}
               className="px-4 py-2 bg-ink text-white rounded-lg text-sm font-bold disabled:opacity-50 active:translate-y-px"
