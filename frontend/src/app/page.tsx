@@ -9,6 +9,17 @@ import { LiveBetView } from "@/components/LiveBetView";
 import type { LiveBet } from "@/components/LiveBetView";
 import { playBetPlaced, playWin, playLose } from "@/lib/sounds";
 import { Confetti } from "@/components/Confetti";
+import {
+  getTelegramWebApp,
+  haptic,
+  setHeaderColor,
+  setBackgroundColor,
+  setBottomBarColor,
+  enableClosingConfirmation,
+  disableClosingConfirmation,
+  disableVerticalSwipes,
+  showConfirm,
+} from "@/lib/telegram";
 
 type Tab = "markets" | "portfolio" | "leaderboard";
 
@@ -100,10 +111,10 @@ function SignalBanner({ deepLink, walletAddress, balance, onBetPlaced }: {
       setBetDone(true);
       playBetPlaced();
       onBetPlaced({ asset: asset!, direction: dir!, amount, timeframe: tf || "15m", entryPrice: entryPrice || 0 });
-      try { (window as any).Telegram?.WebApp?.HapticFeedback?.notificationOccurred("success"); } catch {}
+      haptic("success");
     } catch (err: any) {
       setBetError(err.message || "Trade failed");
-      try { (window as any).Telegram?.WebApp?.HapticFeedback?.notificationOccurred("error"); } catch {}
+      haptic("error");
     } finally {
       setBetting(false);
     }
@@ -193,8 +204,7 @@ export default function Home() {
 
   const getTelegramUser = useCallback(() => {
     try {
-      const tg = (window as any).Telegram?.WebApp;
-      return tg?.initDataUnsafe?.user || null;
+      return getTelegramWebApp()?.initDataUnsafe?.user || null;
     } catch {
       return null;
     }
@@ -259,9 +269,17 @@ export default function Home() {
   useEffect(() => {
     // Initialize Telegram Web App
     try {
-      const tg = (window as any).Telegram?.WebApp;
-      tg?.ready();
-      tg?.expand();
+      const tg = getTelegramWebApp();
+      if (tg) {
+        tg.ready();
+        tg.expand();
+        // Prevent pull-to-close — we want full control of the viewport
+        disableVerticalSwipes();
+        // Set brand colors for the native chrome
+        setHeaderColor("#f4f2ee");
+        setBackgroundColor("#f4f2ee");
+        setBottomBarColor("#f4f2ee");
+      }
     } catch {}
 
     fetchMarkets();
@@ -364,9 +382,7 @@ export default function Home() {
         }
         setResultToast({ type: won ? "won" : "lost", text });
         setTimeout(() => setResultToast(null), 4000);
-        try {
-          (window as any).Telegram?.WebApp?.HapticFeedback?.notificationOccurred(won ? "success" : "error");
-        } catch {}
+        haptic(won ? "success" : "error");
         break; // one at a time so sounds don't overlap
       }
     } catch {}
@@ -379,6 +395,15 @@ export default function Home() {
     const interval = setInterval(checkResolvedBets, 30_000);
     return () => { clearTimeout(initial); clearInterval(interval); };
   }, [walletAddress, checkResolvedBets]);
+
+  // Enable closing confirmation when user has active bets
+  useEffect(() => {
+    if (liveBets.length > 0) {
+      enableClosingConfirmation();
+    } else {
+      disableClosingConfirmation();
+    }
+  }, [liveBets.length]);
 
   // Auto-remove expired bets from liveBets after 5 minutes
   useEffect(() => {
@@ -444,9 +469,7 @@ export default function Home() {
     navigator.clipboard.writeText(walletAddress);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-    try {
-      (window as any).Telegram?.WebApp?.HapticFeedback?.impactOccurred("light");
-    } catch {}
+    haptic("light");
   }
 
   async function exportPrivateKey() {
@@ -474,9 +497,7 @@ export default function Home() {
   function copyPrivateKey() {
     if (!privateKey) return;
     navigator.clipboard.writeText(privateKey);
-    try {
-      (window as any).Telegram?.WebApp?.HapticFeedback?.impactOccurred("light");
-    } catch {}
+    haptic("light");
   }
 
   async function withdraw() {
@@ -630,7 +651,7 @@ export default function Home() {
           ).map(({ key, label }) => (
             <button
               key={key}
-              onClick={() => { setTab(key); if (key === "portfolio") checkResolvedBets(); }}
+              onClick={() => { haptic("selection"); setTab(key); if (key === "portfolio") checkResolvedBets(); }}
               className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${
                 tab === key
                   ? "bg-card text-ink shadow-sm"

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { playBetPlaced, playChipToss, warmUpAudio } from "@/lib/sounds";
+import { showConfirm, haptic } from "@/lib/telegram";
 
 const AMOUNTS = [5, 10, 25, 50];
 const SLIPPAGE_OPTIONS = [
@@ -53,6 +54,13 @@ export function BetButtons({
 
   async function placeBet(amount: number) {
     if (!direction || disabled || noWallet) return;
+
+    // Native Telegram confirmation dialog
+    const confirmed = await showConfirm(
+      `Bet $${amount} on ${asset} ${direction} (${timeframe})?`
+    );
+    if (!confirmed) return;
+
     setLoading(true);
     setError(null);
 
@@ -87,9 +95,7 @@ export function BetButtons({
 
       // Sound + haptic feedback
       playBetPlaced();
-      try {
-        (window as any).Telegram?.WebApp?.HapticFeedback?.notificationOccurred("success");
-      } catch {}
+      haptic("success");
 
       setDirection(null);
     } catch (err: any) {
@@ -104,9 +110,7 @@ export function BetButtons({
       } else {
         setError(msg);
       }
-      try {
-        (window as any).Telegram?.WebApp?.HapticFeedback?.notificationOccurred("error");
-      } catch {}
+      haptic("error");
     } finally {
       setLoading(false);
     }
@@ -117,7 +121,7 @@ export function BetButtons({
       {/* Direction buttons */}
       <div className="grid grid-cols-2 gap-2">
         <button
-          onClick={() => { warmUpAudio(); playChipToss(); setDirection("UP"); setBounceDir("UP"); setTimeout(() => setBounceDir(null), 400); setError(null); }}
+          onClick={() => { warmUpAudio(); playChipToss(); haptic("medium"); setDirection("UP"); setBounceDir("UP"); setTimeout(() => setBounceDir(null), 400); setError(null); }}
           disabled={disabled || loading || noWallet}
           className={`relative py-3.5 rounded-xl font-bold text-sm transition-all ${
             bounceDir === "UP" ? "animate-spring" : ""
@@ -135,7 +139,7 @@ export function BetButtons({
           )}
         </button>
         <button
-          onClick={() => { warmUpAudio(); playChipToss(); setDirection("DOWN"); setBounceDir("DOWN"); setTimeout(() => setBounceDir(null), 400); setError(null); }}
+          onClick={() => { warmUpAudio(); playChipToss(); haptic("medium"); setDirection("DOWN"); setBounceDir("DOWN"); setTimeout(() => setBounceDir(null), 400); setError(null); }}
           disabled={disabled || loading || noWallet}
           className={`relative py-3.5 rounded-xl font-bold text-sm transition-all ${
             bounceDir === "DOWN" ? "animate-spring" : ""
@@ -198,7 +202,7 @@ export function BetButtons({
             {AMOUNTS.map((amt) => (
               <button
                 key={amt}
-                onClick={() => { playChipToss(); setChipFly(true); setTimeout(() => setChipFly(false), 600); placeBet(amt); }}
+                onClick={() => { playChipToss(); haptic("light"); setChipFly(true); setTimeout(() => setChipFly(false), 600); placeBet(amt); }}
                 disabled={loading || noBalance}
                 className="py-2 bg-ink/5 hover:bg-ink/10 text-ink rounded-lg text-sm font-mono font-bold transition-all border border-ink/8 disabled:opacity-50 active:scale-95"
               >

@@ -3,6 +3,15 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { Confetti } from "./Confetti";
 import { playTick, playUrgentTick, playWin, playLose } from "@/lib/sounds";
+import {
+  showBackButton,
+  disableVerticalSwipes,
+  enableVerticalSwipes,
+  setHeaderColor,
+  setBackgroundColor,
+  setBottomBarColor,
+  haptic,
+} from "@/lib/telegram";
 
 export type LiveBet = {
   id: string; // unique key per bet
@@ -20,19 +29,13 @@ type LiveBetViewProps = {
   telegramId?: number;
 };
 
-const BINANCE_SYMBOLS: Record<string, string> = {
-  BTC: "btcusdt",
-  ETH: "ethusdt",
-  SOL: "solusdt",
-};
-
 function formatPrice(price: number): string {
   return price >= 1000
     ? `$${price.toLocaleString("en-US", { maximumFractionDigits: 0 })}`
     : `$${price.toFixed(2)}`;
 }
 
-// Hook: subscribe to Binance live price for an asset
+// Hook: subscribe to Hyperliquid allMids for live price
 function useLivePrice(asset: string, entryPrice: number) {
   const [currentPrice, setCurrentPrice] = useState(entryPrice);
   const [connected, setConnected] = useState(false);
@@ -40,21 +43,28 @@ function useLivePrice(asset: string, entryPrice: number) {
   const historyRef = useRef<number[]>([entryPrice]);
 
   useEffect(() => {
-    const symbol = BINANCE_SYMBOLS[asset];
-    if (!symbol) return;
+    const ws = new WebSocket("wss://api.hyperliquid.xyz/ws");
 
-    const ws = new WebSocket(
-      `wss://stream.binance.com:9443/ws/${symbol}@miniTicker`
-    );
+    ws.onopen = () => {
+      setConnected(true);
+      ws.send(JSON.stringify({
+        method: "subscribe",
+        subscription: { type: "allMids" },
+      }));
+    };
 
-    ws.onopen = () => setConnected(true);
     ws.onclose = () => setConnected(false);
     ws.onerror = () => setConnected(false);
 
     ws.onmessage = (event) => {
       try {
-        const data = JSON.parse(event.data);
-        const price = parseFloat(data.c);
+        const msg = JSON.parse(event.data);
+        if (msg.channel !== "allMids") return;
+        const mids = msg.data?.mids;
+        if (!mids) return;
+        const mid = mids[asset];
+        if (!mid) return;
+        const price = parseFloat(mid);
         if (price > 0) {
           setCurrentPrice(price);
           historyRef.current = [...historyRef.current.slice(-59), price];
@@ -205,7 +215,7 @@ function SingleBetView({ bet, telegramId, onStatusChange }: {
       prevWinningRef.current = isWinning;
       setFlash(isWinning ? "green" : "red");
       setTimeout(() => setFlash(null), 400);
-      try { (window as any).Telegram?.WebApp?.HapticFeedback?.impactOccurred(isWinning ? "medium" : "light"); } catch {}
+      haptic(isWinning ? "medium" : "light");
     }
   }, [isWinning]);
 
@@ -330,6 +340,27 @@ export function LiveBetView({ bets, onClose, telegramId }: LiveBetViewProps) {
   const [showConfetti, setShowConfetti] = useState(false);
   const confettiPlayedRef = useRef(false);
 
+  // Telegram native: BackButton, dark header, disable swipes
+  useEffect(() => {
+    // Dark theme for the live view
+    setHeaderColor("#111111");
+    setBackgroundColor("#111111");
+    setBottomBarColor("#111111");
+    disableVerticalSwipes();
+
+    // Show native back button
+    const cleanup = showBackButton(onClose);
+
+    return () => {
+      cleanup();
+      // Restore light theme
+      setHeaderColor("#f4f2ee");
+      setBackgroundColor("#f4f2ee");
+      setBottomBarColor("#f4f2ee");
+      enableVerticalSwipes();
+    };
+  }, [onClose]);
+
   // Swipe handling
   const touchStartX = useRef(0);
   const touchEndX = useRef(0);
@@ -419,12 +450,12 @@ export function LiveBetView({ bets, onClose, telegramId }: LiveBetViewProps) {
             confettiPlayedRef.current = true;
             setShowConfetti(true);
             playWin();
-            try { (window as any).Telegram?.WebApp?.HapticFeedback?.notificationOccurred("success"); } catch {}
+            haptic("success");
             setTimeout(() => setShowConfetti(false), 3500);
           } else if (isExpired && !winning && !confettiPlayedRef.current) {
             confettiPlayedRef.current = true;
             playLose();
-            try { (window as any).Telegram?.WebApp?.HapticFeedback?.notificationOccurred("error"); } catch {}
+            haptic("error");
           }
         }}
       />
