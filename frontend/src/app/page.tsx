@@ -5,6 +5,7 @@ import type { MarketData } from "@/lib/synth";
 import { MarketCard } from "@/components/MarketCard";
 import { Portfolio } from "@/components/Portfolio";
 import { Leaderboard } from "@/components/Leaderboard";
+import { LiveBetView } from "@/components/LiveBetView";
 
 type Tab = "markets" | "portfolio" | "leaderboard";
 
@@ -47,7 +48,7 @@ function SignalBanner({ deepLink, walletAddress, balance, onBetPlaced }: {
   deepLink: DeepLink;
   walletAddress: string | null;
   balance: number | null;
-  onBetPlaced: (info: { asset: string; direction: string; amount: number; timeframe: string }) => void;
+  onBetPlaced: (info: { asset: string; direction: string; amount: number; timeframe: string; entryPrice?: number }) => void;
 }) {
   const { asset, tf, edge, dir, synthPct, polyPct, slug, entryPrice, ts } = deepLink;
   const [betting, setBetting] = useState(false);
@@ -94,7 +95,7 @@ function SignalBanner({ deepLink, walletAddress, balance, onBetPlaced }: {
       if (!res.ok) throw new Error(data.error);
 
       setBetDone(true);
-      onBetPlaced({ asset: asset!, direction: dir!, amount, timeframe: tf || "15m" });
+      onBetPlaced({ asset: asset!, direction: dir!, amount, timeframe: tf || "15m", entryPrice: entryPrice || 0 });
       try { (window as any).Telegram?.WebApp?.HapticFeedback?.notificationOccurred("success"); } catch {}
     } catch (err: any) {
       setBetError(err.message || "Trade failed");
@@ -180,6 +181,15 @@ export default function Home() {
   const [withdrawResult, setWithdrawResult] = useState<string | null>(null);
   const [withdrawError, setWithdrawError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [liveBet, setLiveBet] = useState<{
+    asset: string;
+    direction: "UP" | "DOWN";
+    amount: number;
+    timeframe: string;
+    entryPrice: number;
+    endTime?: string;
+  } | null>(null);
+  const [liveBetOpen, setLiveBetOpen] = useState(false);
 
   const getTelegramUser = useCallback(() => {
     try {
@@ -328,6 +338,23 @@ export default function Home() {
     return () => clearInterval(balanceInterval);
   }, [walletAddress, fetchBalance]);
 
+  // Auto-clear liveBet pill 5 minutes after market end
+  useEffect(() => {
+    if (!liveBet?.endTime) return;
+    const end = new Date(liveBet.endTime).getTime();
+    const msUntilClear = end + 5 * 60_000 - Date.now();
+    if (msUntilClear <= 0) {
+      setLiveBet(null);
+      setLiveBetOpen(false);
+      return;
+    }
+    const timer = setTimeout(() => {
+      setLiveBet(null);
+      setLiveBetOpen(false);
+    }, msUntilClear);
+    return () => clearTimeout(timer);
+  }, [liveBet?.endTime]);
+
   const showSplash = loading || !splashDone;
 
   const refreshMarkets = useCallback(async () => {
@@ -341,6 +368,8 @@ export default function Home() {
     direction: string;
     amount: number;
     timeframe: string;
+    entryPrice?: number;
+    endTime?: string;
   }) {
     setLastBet(
       `${info.direction} ${info.asset} $${info.amount} (${info.timeframe})`
@@ -348,6 +377,21 @@ export default function Home() {
     // Refresh balance after trade
     setTimeout(fetchBalance, 2000);
     setTimeout(() => setLastBet(null), 3000);
+
+    // Find entry price and end time from market data
+    const market = markets.find((m) => m.asset === info.asset);
+    const tfKey = info.timeframe === "15m" ? "15min" : info.timeframe === "1h" ? "hourly" : "daily";
+    const insight = market?.[tfKey as keyof typeof market] as any;
+
+    setLiveBet({
+      asset: info.asset,
+      direction: info.direction as "UP" | "DOWN",
+      amount: info.amount,
+      timeframe: info.timeframe,
+      entryPrice: info.entryPrice || insight?.current_price || 0,
+      endTime: info.endTime || insight?.event_end_time,
+    });
+    setLiveBetOpen(true);
   }
 
   function copyAddress() {
@@ -694,6 +738,38 @@ export default function Home() {
           </div>
         </div>
       )}
+      {/* Live Bet View */}
+      {liveBet && liveBetOpen && (
+        <LiveBetView
+          asset={liveBet.asset}
+          direction={liveBet.direction}
+          amount={liveBet.amount}
+          timeframe={liveBet.timeframe}
+          entryPrice={liveBet.entryPrice}
+          endTime={liveBet.endTime}
+          onClose={() => setLiveBetOpen(false)}
+          telegramId={getTelegramUser()?.id}
+        />
+      )}
+
+      {/* Floating pill to reopen live bet */}
+      {liveBet && !liveBetOpen && (
+        <button
+          onClick={() => setLiveBetOpen(true)}
+          className={`fixed bottom-24 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 px-4 py-2.5 rounded-full shadow-lg border animate-fade-up ${
+            liveBet.direction === "UP"
+              ? "bg-up/90 border-up text-ink"
+              : "bg-down/90 border-down text-white"
+          }`}
+        >
+          <span className="w-2 h-2 rounded-full bg-white/80 animate-pulse" />
+          <span className="text-xs font-bold font-mono">
+            {liveBet.asset} {liveBet.direction} ${liveBet.amount}
+          </span>
+          <span className="text-[10px] opacity-80">Tap to watch</span>
+        </button>
+      )}
+
       {/* Withdraw Modal */}
       {showWithdraw && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-6">

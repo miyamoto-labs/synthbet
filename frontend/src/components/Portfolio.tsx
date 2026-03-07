@@ -26,6 +26,9 @@ export function Portfolio() {
       const user = tg?.initDataUnsafe?.user;
       if (!user?.id) return;
 
+      // Trigger resolve+redeem for any pending bets, then fetch
+      await fetch(`/api/resolve-mine?telegram_id=${user.id}`).catch(() => {});
+
       const res = await fetch(`/api/portfolio?telegram_id=${user.id}`);
       const data = await res.json();
       setBets(data.bets || []);

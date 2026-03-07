@@ -51,7 +51,7 @@ async function redeemPositions(encryptedPrivateKey: string, conditionId: string)
     const viemWalletClient = createWalletClient({
       account,
       chain: polygon,
-      transport: http('https://polygon-rpc.com'),
+      transport: http('https://polygon-bor-rpc.publicnode.com'),
     });
 
     const { RelayClient } = await import('@polymarket/builder-relayer-client');

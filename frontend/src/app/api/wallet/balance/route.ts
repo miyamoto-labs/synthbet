@@ -4,9 +4,12 @@ import { getSupabaseServer } from '@/lib/supabase-server';
 
 export const dynamic = 'force-dynamic';
 
+const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || 'https://frontend-three-phi-40.vercel.app').trim();
+
 /**
  * GET /api/wallet/balance?telegram_id=<id>
  * Returns the user's USDC balance on Polymarket (from Safe wallet).
+ * Also triggers a background resolve+redeem check via /api/resolve-mine.
  */
 export async function GET(req: NextRequest) {
   try {
@@ -20,13 +23,17 @@ export async function GET(req: NextRequest) {
 
     const { data: user } = await supabase
       .from('synth_users')
-      .select('encrypted_private_key, clob_api_key, clob_api_secret, clob_api_passphrase, wallet_address, safe_address')
+      .select('id, encrypted_private_key, clob_api_key, clob_api_secret, clob_api_passphrase, wallet_address, safe_address')
       .eq('telegram_id', parseInt(telegramId))
       .single();
 
     if (!user?.encrypted_private_key) {
       return NextResponse.json({ error: 'No wallet found', balance: 0 }, { status: 404 });
     }
+
+    // Fire-and-forget: trigger resolve+redeem as a separate serverless invocation
+    // This runs independently — won't die when this function returns its response
+    fetch(`${APP_URL}/api/resolve-mine?telegram_id=${telegramId}`).catch(() => {});
 
     const builderConfig = await getBuilderConfig();
     const clobClient = await createServerClobClient(

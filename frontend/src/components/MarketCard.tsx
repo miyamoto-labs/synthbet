@@ -30,7 +30,7 @@ type MarketCardProps = {
   min15: SynthInsight | null;
   hourly: SynthInsight | null;
   daily: SynthInsight | null;
-  onBetPlaced: (info: { asset: string; direction: string; amount: number; timeframe: string }) => void;
+  onBetPlaced: (info: { asset: string; direction: string; amount: number; timeframe: string; entryPrice?: number; endTime?: string }) => void;
   onMarketExpired?: () => void;
   walletAddress?: string | null;
   balance?: number | null;
@@ -268,7 +268,7 @@ export function MarketCard({ asset, min15, hourly, daily, onBetPlaced, onMarketE
           onBetPlaced={({ direction, amount }) => {
             setShowSuccess(true);
             setTimeout(() => setShowSuccess(false), 2000);
-            onBetPlaced({ asset, direction, amount, timeframe: activeTf });
+            onBetPlaced({ asset, direction, amount, timeframe: activeTf, entryPrice: insight.current_price, endTime: insight.event_end_time });
           }}
           onMarketExpired={onMarketExpired}
         />

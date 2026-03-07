@@ -120,6 +120,12 @@ export async function GET(req: Request) {
         const absEdge = Math.abs(edge);
 
         if (absEdge >= EDGE_THRESHOLD) {
+          // Skip if market has already expired or expires within 2 minutes
+          if (insight.event_end_time) {
+            const endMs = new Date(insight.event_end_time).getTime();
+            if (endMs - Date.now() < 120_000) continue;
+          }
+
           const tradeDirection = edge > 0 ? "UP" : "DOWN";
           // Format market window times (e.g., "14:00–14:15")
           const startTime = insight.event_start_time

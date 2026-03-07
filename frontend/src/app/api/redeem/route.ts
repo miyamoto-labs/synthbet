@@ -88,7 +88,7 @@ export async function GET(req: NextRequest) {
   const privateKey = decrypt(user.encrypted_private_key) as `0x${string}`;
   const account = privateKeyToAccount(privateKey);
   const viemWalletClient = createWalletClient({
-    account, chain: polygon, transport: http('https://polygon-rpc.com'),
+    account, chain: polygon, transport: http('https://polygon-bor-rpc.publicnode.com'),
   });
 
   const { RelayClient } = await import('@polymarket/builder-relayer-client');
@@ -99,44 +99,51 @@ export async function GET(req: NextRequest) {
     RELAYER_URL, 137, viemWalletClient as any, builderConfig as any,
   );
 
-  // Batch all redeems into one relayer transaction
-  const redeemTxs = [...conditionIds].map(conditionId => ({
-    to: CTF_TOKEN,
-    data: encodeFunctionData({
-      abi: ctfRedeemAbi,
-      functionName: 'redeemPositions',
-      args: [
-        USDC_TOKEN as `0x${string}`,
-        ZERO_HASH as `0x${string}`,
-        conditionId as `0x${string}`,
-        [BigInt(1), BigInt(2)],
-      ],
-    }),
-    value: '0',
-  }));
+  // Redeem each condition individually to avoid batch failures
+  const results: { conditionId: string; state: string }[] = [];
+  let redeemed = 0;
 
-  try {
-    const response = await relayClient.execute(redeemTxs);
-    console.log(`[Redeem] Submitted ${redeemTxs.length} redeems, txID: ${response.transactionID}`);
+  for (const conditionId of conditionIds) {
+    const redeemTx = {
+      to: CTF_TOKEN,
+      data: encodeFunctionData({
+        abi: ctfRedeemAbi,
+        functionName: 'redeemPositions',
+        args: [
+          USDC_TOKEN as `0x${string}`,
+          ZERO_HASH as `0x${string}`,
+          conditionId as `0x${string}`,
+          [BigInt(1), BigInt(2)],
+        ],
+      }),
+      value: '0',
+    };
 
-    const result = await relayClient.pollUntilState(
-      response.transactionID,
-      ['STATE_MINED', 'STATE_CONFIRMED'],
-      'STATE_FAILED',
-      15,
-      3000
-    );
+    try {
+      const response = await relayClient.execute([redeemTx]);
+      console.log(`[Redeem] Submitted for ${conditionId}, txID: ${response.transactionID}`);
 
-    const state = (result as any)?.state || 'unknown';
-    console.log(`[Redeem] Result: ${state}`);
+      const result = await relayClient.pollUntilState(
+        response.transactionID,
+        ['STATE_MINED', 'STATE_CONFIRMED'],
+        'STATE_FAILED',
+        15,
+        3000
+      );
 
-    return NextResponse.json({
-      redeemed: conditionIds.size,
-      state,
-      conditionIds: [...conditionIds],
-    });
-  } catch (err: any) {
-    console.error('[Redeem] Error:', err);
-    return NextResponse.json({ error: err.message || 'Redeem failed' }, { status: 500 });
+      const state = (result as any)?.state || 'unknown';
+      console.log(`[Redeem] ${conditionId}: ${state}`);
+      results.push({ conditionId, state });
+      if (state === 'STATE_MINED' || state === 'STATE_CONFIRMED') redeemed++;
+    } catch (err: any) {
+      console.error(`[Redeem] Failed for ${conditionId}:`, err.message);
+      results.push({ conditionId, state: `error: ${err.message}` });
+    }
   }
+
+  return NextResponse.json({
+    redeemed,
+    total: conditionIds.size,
+    results,
+  });
 }
