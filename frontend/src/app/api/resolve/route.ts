@@ -228,16 +228,12 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // Auto-redeem winning positions (skip in dry mode)
-  if (!DRY_MODE) {
-    for (const [userId, redemption] of userRedemptions) {
-      for (const conditionId of redemption.conditionIds) {
-        const success = await redeemPositions(redemption.encryptedPrivateKey, conditionId);
-        if (success) redeemed++;
-      }
+  // Auto-redeem winning positions (always run — users may have real positions)
+  for (const [userId, redemption] of userRedemptions) {
+    for (const conditionId of redemption.conditionIds) {
+      const success = await redeemPositions(redemption.encryptedPrivateKey, conditionId);
+      if (success) redeemed++;
     }
-  } else {
-    console.log(`[Resolve] DRY MODE: skipping redeem for ${userRedemptions.size} users`);
   }
 
   // Send Telegram notifications

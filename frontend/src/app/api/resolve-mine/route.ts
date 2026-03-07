@@ -173,8 +173,8 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // Auto-redeem winning positions (skip in dry mode — no real positions)
-  if (conditionIdsToRedeem.size > 0 && user.encrypted_private_key && !DRY_MODE) {
+  // Auto-redeem winning positions (always run — user may have real positions even in dry mode)
+  if (conditionIdsToRedeem.size > 0 && user.encrypted_private_key) {
     try {
       const privateKey = decrypt(user.encrypted_private_key) as `0x${string}`;
       const account = privateKeyToAccount(privateKey);

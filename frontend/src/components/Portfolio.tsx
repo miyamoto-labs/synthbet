@@ -19,6 +19,8 @@ type Bet = {
 export function Portfolio() {
   const [bets, setBets] = useState<Bet[]>([]);
   const [loading, setLoading] = useState(true);
+  const [redeeming, setRedeeming] = useState(false);
+  const [redeemResult, setRedeemResult] = useState<string | null>(null);
 
   const fetchBets = useCallback(async () => {
     try {
@@ -74,6 +76,33 @@ export function Portfolio() {
   const wins = bets.filter((b) => b.result === "won").length;
   const resolved = bets.filter((b) => b.result !== "pending").length;
   const pendingCount = bets.filter((b) => b.result === "pending").length;
+  const hasWins = bets.some((b) => b.result === "won");
+
+  async function claimWinnings() {
+    setRedeeming(true);
+    setRedeemResult(null);
+    try {
+      const tg = (window as any).Telegram?.WebApp;
+      const user = tg?.initDataUnsafe?.user;
+      if (!user?.id) throw new Error("No user");
+
+      const res = await fetch(`/api/redeem?telegram_id=${user.id}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Redeem failed");
+
+      if (data.redeemed > 0) {
+        setRedeemResult(`Claimed ${data.redeemed} position${data.redeemed > 1 ? "s" : ""} to USDC`);
+        try { (window as any).Telegram?.WebApp?.HapticFeedback?.notificationOccurred("success"); } catch {}
+      } else {
+        setRedeemResult("No positions to claim right now");
+      }
+    } catch (err: any) {
+      setRedeemResult(err.message || "Claim failed");
+      try { (window as any).Telegram?.WebApp?.HapticFeedback?.notificationOccurred("error"); } catch {}
+    } finally {
+      setRedeeming(false);
+    }
+  }
 
   function timeAgo(dateStr: string) {
     const diff = Date.now() - new Date(dateStr).getTime();
@@ -119,6 +148,24 @@ export function Portfolio() {
           </div>
         </div>
       </div>
+
+      {/* Claim winnings button */}
+      {hasWins && (
+        <button
+          onClick={claimWinnings}
+          disabled={redeeming}
+          className="w-full py-3 rounded-xl text-sm font-bold transition-all active:scale-[0.98] bg-up text-ink shadow-sm disabled:opacity-50"
+        >
+          {redeeming ? "Claiming..." : "Claim Winnings to USDC"}
+        </button>
+      )}
+      {redeemResult && (
+        <div className={`rounded-xl px-3 py-2 text-center text-xs font-medium ${
+          redeemResult.includes("Claimed") ? "bg-up/10 text-up-dark" : "bg-ink/5 text-muted"
+        }`}>
+          {redeemResult}
+        </div>
+      )}
 
       {/* Pending bets info */}
       {pendingCount > 0 && (

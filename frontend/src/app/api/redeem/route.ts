@@ -33,11 +33,9 @@ const ctfRedeemAbi = [{
  * Redeems all winning CTF positions for a user.
  */
 export async function GET(req: NextRequest) {
+  // Allow both cron (with CRON_SECRET) and direct app calls (with telegram_id)
   const authHeader = req.headers.get('authorization');
-  if (CRON_SECRET && authHeader !== `Bearer ${CRON_SECRET}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
+  const hasCronAuth = CRON_SECRET && authHeader === `Bearer ${CRON_SECRET}`;
   const telegramId = req.nextUrl.searchParams.get('telegram_id');
   if (!telegramId) {
     return NextResponse.json({ error: 'Missing telegram_id' }, { status: 400 });
