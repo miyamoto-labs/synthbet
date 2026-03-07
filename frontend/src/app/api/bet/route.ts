@@ -253,10 +253,14 @@ export async function POST(req: NextRequest) {
       // Order was placed successfully, just logging failed — don't fail the request
     }
 
-    // Update total_bets counter
+    // Update total_bets counter + deduct balance in DRY_MODE
+    const updates: Record<string, any> = { total_bets: (user.total_bets || 0) + 1 };
+    if (DRY_MODE) {
+      updates.balance = Math.max(0, (user.balance || 0) - amount);
+    }
     await supabase
       .from('synth_users')
-      .update({ total_bets: (user.total_bets || 0) + 1 })
+      .update(updates)
       .eq('id', user.id);
 
     return NextResponse.json({

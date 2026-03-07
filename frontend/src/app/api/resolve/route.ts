@@ -181,14 +181,18 @@ export async function GET(req: NextRequest) {
 
         const { data: user } = await supabase
           .from('synth_users')
-          .select('total_pnl, telegram_id, encrypted_private_key')
+          .select('total_pnl, balance, telegram_id, encrypted_private_key')
           .eq('id', bet.user_id)
           .single();
 
         if (user) {
+          const balanceDelta = won ? bet.amount * 2 : 0;
           await supabase
             .from('synth_users')
-            .update({ total_pnl: (user.total_pnl || 0) + pnl })
+            .update({
+              total_pnl: (user.total_pnl || 0) + pnl,
+              balance: (parseFloat(user.balance) || 0) + balanceDelta,
+            })
             .eq('id', bet.user_id);
 
           // Queue redemption for winners

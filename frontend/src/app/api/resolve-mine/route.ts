@@ -141,20 +141,24 @@ export async function GET(req: NextRequest) {
 
         await supabase
           .from('synth_bets')
-          .update({ result: won ? 'won' : 'lost', pnl })
+          .update({ result: won ? 'won' : 'lost', pnl, resolved_at: new Date().toISOString() })
           .eq('id', bet.id);
 
-        // Update user total_pnl
+        // Update user total_pnl + balance (balance matters for DRY_MODE)
         const { data: userData } = await supabase
           .from('synth_users')
-          .select('total_pnl')
+          .select('total_pnl, balance')
           .eq('id', user.id)
           .single();
 
         if (userData) {
+          const balanceDelta = won ? bet.amount * 2 : 0; // win returns original stake + profit
           await supabase
             .from('synth_users')
-            .update({ total_pnl: (userData.total_pnl || 0) + pnl })
+            .update({
+              total_pnl: (userData.total_pnl || 0) + pnl,
+              balance: (userData.balance || 0) + balanceDelta,
+            })
             .eq('id', user.id);
         }
 

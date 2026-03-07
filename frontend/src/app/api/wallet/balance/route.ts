@@ -19,11 +19,12 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Missing telegram_id' }, { status: 400 });
     }
 
+    const DRY_MODE = process.env.DRY_MODE?.trim() === 'true';
     const supabase = getSupabaseServer();
 
     const { data: user } = await supabase
       .from('synth_users')
-      .select('id, encrypted_private_key, clob_api_key, clob_api_secret, clob_api_passphrase, wallet_address, safe_address')
+      .select('id, encrypted_private_key, clob_api_key, clob_api_secret, clob_api_passphrase, wallet_address, safe_address, balance')
       .eq('telegram_id', parseInt(telegramId))
       .single();
 
@@ -32,8 +33,15 @@ export async function GET(req: NextRequest) {
     }
 
     // Fire-and-forget: trigger resolve+redeem as a separate serverless invocation
-    // This runs independently — won't die when this function returns its response
     fetch(`${APP_URL}/api/resolve-mine?telegram_id=${telegramId}`).catch(() => {});
+
+    // In DRY_MODE, return the Supabase balance (no real on-chain positions)
+    if (DRY_MODE) {
+      return NextResponse.json({
+        balance: user.balance ?? 10000,
+        wallet_address: user.safe_address || user.wallet_address,
+      });
+    }
 
     const builderConfig = await getBuilderConfig();
     const clobClient = await createServerClobClient(
