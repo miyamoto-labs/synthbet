@@ -9,6 +9,7 @@ import { LiveBetView } from "@/components/LiveBetView";
 import type { LiveBet } from "@/components/LiveBetView";
 import { playBetPlaced, playWin, playLose } from "@/lib/sounds";
 import { Confetti } from "@/components/Confetti";
+import { Onboarding } from "@/components/Onboarding";
 import {
   getTelegramWebApp,
   haptic,
@@ -196,6 +197,10 @@ export default function Home() {
   const [withdrawResult, setWithdrawResult] = useState<string | null>(null);
   const [withdrawError, setWithdrawError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return !localStorage.getItem("synthbet_onboarded");
+  });
   const [liveBets, setLiveBets] = useState<LiveBet[]>([]);
   const [liveBetOpen, setLiveBetOpen] = useState(false);
   const [resultToast, setResultToast] = useState<{ type: "won" | "lost"; text: string } | null>(null);
@@ -607,6 +612,17 @@ export default function Home() {
           <div className="h-full rounded-full bg-up animate-splash-progress" />
         </div>
       </div>
+    );
+  }
+
+  if (showOnboarding) {
+    return (
+      <Onboarding
+        onComplete={() => {
+          localStorage.setItem("synthbet_onboarded", "1");
+          setShowOnboarding(false);
+        }}
+      />
     );
   }
 

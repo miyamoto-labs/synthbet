@@ -5,6 +5,32 @@ import { playBetPlaced, playChipToss, warmUpAudio } from "@/lib/sounds";
 import { showConfirm, haptic } from "@/lib/telegram";
 
 const AMOUNTS = [5, 10, 25, 50];
+
+// Kelly Criterion: optimal bet sizing given edge and odds.
+// f* = (bp - q) / b where b = net odds, p = true prob, q = 1-p
+// We use half-Kelly for safety.
+function kellyBet(synthProb: number, polyProb: number, direction: "UP" | "DOWN", bankroll: number): { amount: number; fraction: number } | null {
+  // Our estimated true probability of winning
+  const p = direction === "UP" ? synthProb : 1 - synthProb;
+  // Market implied probability (what we're buying at)
+  const marketP = direction === "UP" ? polyProb : 1 - polyProb;
+  // Edge: our prob - market's prob
+  const edge = p - marketP;
+  if (edge <= 0) return null; // no edge = don't bet
+
+  // For binary payoff at price `marketP`, the odds are (1/marketP - 1) : 1
+  const b = (1 / marketP) - 1;
+  const q = 1 - p;
+  const fullKelly = (b * p - q) / b;
+  if (fullKelly <= 0) return null;
+
+  // Half-Kelly for safety
+  const fraction = fullKelly / 2;
+  const amount = Math.round(bankroll * fraction);
+  // Clamp to $5–$100
+  const clamped = Math.max(5, Math.min(100, amount));
+  return { amount: clamped, fraction };
+}
 const SLIPPAGE_OPTIONS = [
   { label: "5%", value: 0.05 },
   { label: "10%", value: 0.10 },
@@ -178,6 +204,28 @@ export function BetButtons({
       {/* Amount + slippage — show only when direction selected */}
       {direction && !noWallet && (
         <div className="space-y-2 animate-fade-up">
+          {/* Kelly recommendation */}
+          {(() => {
+            const bankroll = balance ?? 10000;
+            const kelly = kellyBet(synthProbUp, polyProbUp, direction, bankroll);
+            if (!kelly) return null;
+            return (
+              <button
+                onClick={() => { playChipToss(); haptic("light"); setChipFly(true); setTimeout(() => setChipFly(false), 600); placeBet(kelly.amount); }}
+                disabled={loading || noBalance}
+                className={`w-full py-2.5 rounded-xl text-sm font-bold transition-all active:scale-[0.98] border disabled:opacity-50 ${
+                  direction === "UP"
+                    ? "bg-up/10 border-up/25 text-up-dark"
+                    : "bg-down/10 border-down/25 text-down"
+                }`}
+              >
+                <span className="text-[10px] font-semibold opacity-60 block -mb-0.5">Kelly says</span>
+                ${kelly.amount}
+                <span className="text-[10px] opacity-60 ml-1">({(kelly.fraction * 100).toFixed(1)}% of bankroll)</span>
+              </button>
+            );
+          })()}
+
           {/* Slippage selector */}
           <div className="flex items-center gap-2">
             <span className="text-[10px] text-muted font-semibold">Slippage:</span>
