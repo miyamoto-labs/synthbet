@@ -51,6 +51,33 @@ const FEATURES = [
   },
 ];
 
+const PHASE_TWO = [
+  {
+    title: "Smart Timing Engine",
+    desc: "ML model learns when in a market window the best entry is. Early bets capture more edge but risk more noise. The engine recommends optimal entry timing per asset.",
+  },
+  {
+    title: "Referral System",
+    desc: "Invite friends, earn a % of their trading volume in USDC. Viral loop built into Telegram — share your edge, grow the pool.",
+  },
+  {
+    title: "Multi-Market Expansion",
+    desc: "Aggregate odds from Kalshi, Azuro, and Polymarket. Cross-market arb detection and one-tap trading across platforms.",
+  },
+  {
+    title: "Portfolio Analytics",
+    desc: "Win rate by asset, edge accuracy over time, Kelly performance tracking. Full transparency on how the model performs vs the market.",
+  },
+  {
+    title: "Weekly Competitions",
+    desc: "Leaderboard resets weekly. Top traders win bonus USDC. Streak badges, achievement system, and social sharing via Telegram Stories.",
+  },
+  {
+    title: "Telegram Bot Inline Mode",
+    desc: "Share live bets and edge alerts directly in any Telegram chat. Friends tap to copy the trade instantly.",
+  },
+];
+
 const TECH = [
   "Synthdata Predictive Intelligence API",
   "Polymarket CLOB + Gamma API",
@@ -213,6 +240,40 @@ export default function PitchPage() {
               style={{ background: "#111", border: "1px solid #1a1a1a" }}
             >
               <h3 className="text-sm font-bold mb-2" style={{ color: "#fff" }}>
+                {f.title}
+              </h3>
+              <p className="text-xs leading-relaxed" style={{ color: "#777" }}>
+                {f.desc}
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Phase Two */}
+      <section className="px-6 py-20 max-w-3xl mx-auto">
+        <div className="text-center mb-12">
+          <span
+            className="text-xs font-bold tracking-widest uppercase px-3 py-1.5 rounded-full"
+            style={{ background: "#ffab4020", color: "#ffab40", border: "1px solid #ffab4030" }}
+          >
+            Roadmap
+          </span>
+          <h2 className="text-2xl font-bold mt-4" style={{ color: "#fff" }}>
+            Phase Two
+          </h2>
+          <p className="text-sm mt-2" style={{ color: "#666" }}>
+            What we&apos;re building next after the hackathon.
+          </p>
+        </div>
+        <div className="grid sm:grid-cols-2 gap-6">
+          {PHASE_TWO.map((f) => (
+            <div
+              key={f.title}
+              className="rounded-xl p-5"
+              style={{ background: "#111", border: "1px solid #ffab4015" }}
+            >
+              <h3 className="text-sm font-bold mb-2" style={{ color: "#ffab40" }}>
                 {f.title}
               </h3>
               <p className="text-xs leading-relaxed" style={{ color: "#777" }}>

@@ -28,17 +28,11 @@ export async function POST(req: NextRequest) {
     } = body;
 
     // --- Validation ---
-    if (!telegram_id || !asset || !direction || !timeframe || !amount) {
+    if (!telegram_id || !asset || !direction || !amount) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
-    }
-    if (!['BTC', 'ETH', 'SOL'].includes(asset)) {
-      return NextResponse.json({ error: 'Invalid asset' }, { status: 400 });
     }
     if (!['UP', 'DOWN'].includes(direction)) {
       return NextResponse.json({ error: 'Invalid direction' }, { status: 400 });
-    }
-    if (!['15m', '1h', 'daily'].includes(timeframe)) {
-      return NextResponse.json({ error: 'Invalid timeframe' }, { status: 400 });
     }
     if (amount < 5 || amount > 100) {
       return NextResponse.json({ error: 'Amount must be $5-$100' }, { status: 400 });

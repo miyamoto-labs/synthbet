@@ -10,6 +10,7 @@ import type { LiveBet } from "@/components/LiveBetView";
 import { playBetPlaced, playWin, playLose } from "@/lib/sounds";
 import { Confetti } from "@/components/Confetti";
 import { Onboarding } from "@/components/Onboarding";
+import { FeaturedMarkets } from "@/components/FeaturedMarkets";
 import {
   getTelegramWebApp,
   haptic,
@@ -651,7 +652,7 @@ export default function Home() {
               SynthBet
             </h1>
             <p className="text-xs font-mono text-muted mt-0.5">
-              AI-powered crypto predictions
+              AI edge + fun markets
             </p>
           </div>
           <div className="text-right">
@@ -819,6 +820,13 @@ export default function Home() {
                 />
               ))
             )}
+
+            {/* Featured / Fun Markets */}
+            <FeaturedMarkets
+              walletAddress={walletAddress}
+              balance={balance}
+              onBetPlaced={handleBetPlaced}
+            />
 
             {/* Powered by */}
             <div className="text-center text-[11px] font-mono text-muted py-4">
