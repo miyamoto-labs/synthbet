@@ -157,21 +157,21 @@ function Sparkline({
     >
       <line
         x1={padding} y1={entryY} x2={width - padding} y2={entryY}
-        stroke="#6b6b6b" strokeWidth="0.5" strokeDasharray="4,4" opacity="0.5"
+        stroke="#C4A882" strokeWidth="0.5" strokeDasharray="4,4" opacity="0.5"
       />
-      <text x={width - padding} y={entryY - 4} textAnchor="end" fill="#6b6b6b" fontSize="7" fontFamily="monospace">
+      <text x={width - padding} y={entryY - 4} textAnchor="end" fill="#C4A882" fontSize="7" fontFamily="monospace">
         entry
       </text>
       <polyline
         points={points.join(" ")}
         fill="none"
-        stroke={isWinning ? "#00e676" : "#ff3d57"}
+        stroke={isWinning ? "#00c853" : "#ff3d57"}
         strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
       />
       <circle cx={parseFloat(lastPoint[0])} cy={parseFloat(lastPoint[1])} r="3"
-        fill={isWinning ? "#00e676" : "#ff3d57"} className="animate-pulse" />
+        fill={isWinning ? "#00c853" : "#ff3d57"} className="animate-pulse" />
       <circle cx={parseFloat(lastPoint[0])} cy={parseFloat(lastPoint[1])} r="6"
-        fill={isWinning ? "#00e676" : "#ff3d57"} opacity="0.3" className="animate-pulse" />
+        fill={isWinning ? "#00c853" : "#ff3d57"} opacity="0.3" className="animate-pulse" />
     </svg>
   );
 }
@@ -266,7 +266,7 @@ function SingleBetView({ bet, telegramId, onStatusChange }: {
       {/* Connection indicator */}
       <div className="flex items-center gap-2 mb-4">
         <span className={`w-1.5 h-1.5 rounded-full ${connected ? "bg-up animate-pulse" : "bg-down"}`} />
-        <span className="text-white/30 text-[9px] font-mono">
+        <span className="text-muted/60 text-[9px] font-mono">
           {connected ? "LIVE" : "..."}
         </span>
       </div>
@@ -280,14 +280,14 @@ function SingleBetView({ bet, telegramId, onStatusChange }: {
 
       {/* Big price with color flash on change */}
       <div className={`text-5xl font-bold font-mono tracking-tight mb-1 transition-colors duration-300 ${
-        priceDiff > 0 ? "text-up" : priceDiff < 0 ? "text-down" : "text-white"
+        priceDiff > 0 ? "text-up" : priceDiff < 0 ? "text-down" : "text-ink"
       }`}>
         {formatPrice(currentPrice)}
       </div>
 
       {/* Price change */}
       <div className={`text-lg font-bold font-mono mb-6 ${
-        isWinning ? "text-up" : priceDiff === 0 ? "text-white/40" : "text-down"
+        isWinning ? "text-up" : priceDiff === 0 ? "text-muted" : "text-down"
       }`}>
         {priceDiff >= 0 ? "+" : ""}{pricePct.toFixed(3)}%
         <span className="text-sm ml-2 opacity-70">
@@ -303,11 +303,11 @@ function SingleBetView({ bet, telegramId, onStatusChange }: {
       {/* Countdown */}
       {(remaining || !bet.endTime) && (
         <div className="text-center mb-6">
-          <div className="text-white/40 text-[10px] font-mono uppercase tracking-widest mb-1">
+          <div className="text-muted text-[10px] font-mono uppercase tracking-widest mb-1">
             {expired ? "Waiting for Result" : "Time Remaining"}
           </div>
           <div className={`text-4xl font-bold font-mono tracking-wider ${
-            expired ? "text-gold" : remaining.startsWith("00:") ? "text-down animate-pulse" : "text-white"
+            expired ? "text-gold" : remaining.startsWith("00:") ? "text-down animate-pulse" : "text-ink"
           }`}>
             {remaining || "--:--"}
           </div>
@@ -316,16 +316,16 @@ function SingleBetView({ bet, telegramId, onStatusChange }: {
 
       {/* Entry vs Current */}
       <div className="grid grid-cols-2 gap-4 w-full max-w-xs">
-        <div className="bg-white/5 rounded-xl p-3 text-center border border-white/10">
-          <div className="text-white/40 text-[9px] font-mono uppercase tracking-wider mb-1">Entry</div>
-          <div className="text-white font-bold font-mono text-sm">{formatPrice(bet.entryPrice)}</div>
+        <div className="bg-ink/5 rounded-xl p-3 text-center border border-amber/10">
+          <div className="text-muted text-[9px] font-mono uppercase tracking-wider mb-1">Entry</div>
+          <div className="text-ink font-bold font-mono text-sm">{formatPrice(bet.entryPrice)}</div>
         </div>
         <div className={`rounded-xl p-3 text-center border ${
-          isWinning ? "bg-up/10 border-up/20" : priceDiff === 0 ? "bg-white/5 border-white/10" : "bg-down/10 border-down/20"
+          isWinning ? "bg-up/10 border-up/20" : priceDiff === 0 ? "bg-ink/5 border-amber/10" : "bg-down/10 border-down/20"
         }`}>
-          <div className="text-white/40 text-[9px] font-mono uppercase tracking-wider mb-1">Status</div>
+          <div className="text-muted text-[9px] font-mono uppercase tracking-wider mb-1">Status</div>
           <div className={`font-bold font-mono text-sm ${
-            isWinning ? "text-up" : priceDiff === 0 ? "text-white/60" : "text-down"
+            isWinning ? "text-up" : priceDiff === 0 ? "text-ink/60" : "text-down"
           }`}>
             {isWinning ? "WINNING" : priceDiff === 0 ? "EVEN" : "LOSING"}
           </div>
@@ -342,10 +342,10 @@ export function LiveBetView({ bets, onClose, telegramId }: LiveBetViewProps) {
 
   // Telegram native: BackButton, dark header, disable swipes
   useEffect(() => {
-    // Dark theme for the live view
-    setHeaderColor("#111111");
-    setBackgroundColor("#111111");
-    setBottomBarColor("#111111");
+    // Déja dark theme for the live view
+    setHeaderColor("#1C1611");
+    setBackgroundColor("#1C1611");
+    setBottomBarColor("#1C1611");
     disableVerticalSwipes();
 
     // Show native back button
@@ -353,10 +353,10 @@ export function LiveBetView({ bets, onClose, telegramId }: LiveBetViewProps) {
 
     return () => {
       cleanup();
-      // Restore light theme
-      setHeaderColor("#f4f2ee");
-      setBackgroundColor("#f4f2ee");
-      setBottomBarColor("#f4f2ee");
+      // Restore Déja theme
+      setHeaderColor("#1C1611");
+      setBackgroundColor("#1C1611");
+      setBottomBarColor("#2C1F14");
       enableVerticalSwipes();
     };
   }, [onClose]);
@@ -388,7 +388,7 @@ export function LiveBetView({ bets, onClose, telegramId }: LiveBetViewProps) {
 
   return (
     <div
-      className="fixed inset-0 bg-ink z-50 flex flex-col animate-scale-in overflow-hidden"
+      className="fixed inset-0 bg-bg z-50 flex flex-col animate-scale-in overflow-hidden"
       onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX; }}
       onTouchMove={(e) => { touchEndX.current = e.touches[0].clientX; }}
       onTouchEnd={handleSwipe}
@@ -397,11 +397,11 @@ export function LiveBetView({ bets, onClose, telegramId }: LiveBetViewProps) {
       <div className="flex items-center justify-between px-4 pt-4 pb-2">
         <button
           onClick={(e) => { e.stopPropagation(); onClose(); }}
-          className="text-white/60 text-sm font-medium active:text-white transition-colors px-3 py-2 -ml-3 rounded-xl active:bg-white/10"
+          className="text-ink/60 text-sm font-medium active:text-amber-light transition-colors px-3 py-2 -ml-3 rounded-xl active:bg-ink/10"
         >
           &larr; Back
         </button>
-        <span className="text-white/30 text-[10px] font-mono">
+        <span className="text-muted/60 text-[10px] font-mono">
           {bets.length} bet{bets.length > 1 ? "s" : ""} live
         </span>
       </div>
@@ -421,13 +421,13 @@ export function LiveBetView({ bets, onClose, telegramId }: LiveBetViewProps) {
                     ? isUp
                       ? "bg-up/20 border-up/40 text-up"
                       : "bg-down/20 border-down/40 text-down"
-                    : "bg-white/5 border-white/10 text-white/40"
+                    : "bg-ink/5 border-amber/10 text-muted"
                 }`}
               >
                 <span className={`w-1.5 h-1.5 rounded-full ${
                   isActive
                     ? isUp ? "bg-up animate-pulse" : "bg-down animate-pulse"
-                    : "bg-white/25"
+                    : "bg-muted/40"
                 }`} />
                 {b.asset}
                 <span className={`text-[10px] font-mono ${isActive ? "" : "opacity-50"}`}>
@@ -466,11 +466,11 @@ export function LiveBetView({ bets, onClose, telegramId }: LiveBetViewProps) {
       <div className="px-6 pb-8 space-y-3">
         <button
           onClick={(e) => { e.stopPropagation(); onClose(); }}
-          className="w-full py-3 rounded-xl text-sm font-semibold text-white/50 bg-white/5 border border-white/10 active:bg-white/10 transition-colors"
+          className="w-full py-3 rounded-xl text-sm font-semibold text-ink/50 bg-ink/5 border border-amber/10 active:bg-ink/10 transition-colors"
         >
           Minimize
         </button>
-        <p className="text-white/30 text-[10px] font-mono text-center">
+        <p className="text-muted/60 text-[10px] font-mono text-center">
           Live price from Binance · Final result from Polymarket
         </p>
       </div>

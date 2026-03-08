@@ -37,10 +37,10 @@ const STEPS = [
     visual: (
       <div className="flex flex-col items-center gap-3 py-6">
         <div className="grid grid-cols-2 gap-3 w-48">
-          <div className="py-3 rounded-xl bg-up text-ink text-center text-sm font-bold shadow-sm">
+          <div className="py-3 rounded-xl bg-up text-charcoal text-center text-sm font-bold shadow-sm">
             UP
           </div>
-          <div className="py-3 rounded-xl bg-down/90 text-white text-center text-sm font-bold shadow-sm">
+          <div className="py-3 rounded-xl bg-down text-white text-center text-sm font-bold shadow-sm">
             DOWN
           </div>
         </div>
@@ -59,8 +59,8 @@ const STEPS = [
     body: "Real-time price from Hyperliquid, countdown to market close, sparkline charts. Win or lose — you'll know in minutes.",
     visual: (
       <div className="flex flex-col items-center gap-2 py-6">
-        <div className="bg-ink rounded-2xl px-6 py-5 text-center w-56">
-          <div className="text-[10px] text-white/40 font-mono uppercase tracking-wider mb-1">Live Price</div>
+        <div className="bg-card rounded-2xl px-6 py-5 text-center w-56 border border-amber/10">
+          <div className="text-[10px] text-muted font-mono uppercase tracking-wider mb-1">Live Price</div>
           <div className="text-3xl font-bold font-mono text-up">$97,432</div>
           <div className="text-sm font-mono text-up mt-0.5">+0.34%</div>
           <div className="mt-3 flex justify-center gap-1">
@@ -72,8 +72,8 @@ const STEPS = [
               />
             ))}
           </div>
-          <div className="text-2xl font-bold font-mono text-white mt-3">04:32</div>
-          <div className="text-[9px] text-white/40 font-mono uppercase">Time Left</div>
+          <div className="text-2xl font-bold font-mono text-ink mt-3">04:32</div>
+          <div className="text-[9px] text-muted font-mono uppercase">Time Left</div>
         </div>
       </div>
     ),
@@ -83,7 +83,7 @@ const STEPS = [
     body: "Your bets are real trades on Polymarket via a Gnosis Safe wallet. Winnings auto-redeem to USDC. Deposit, trade, withdraw — all in-app.",
     visual: (
       <div className="flex flex-col items-center gap-3 py-6">
-        <div className="bg-card rounded-2xl px-5 py-4 w-52 text-center shadow-sm border border-ink/5">
+        <div className="bg-card rounded-2xl px-5 py-4 w-52 text-center shadow-sm border border-amber/10">
           <div className="text-muted text-[10px] font-medium">Your Balance</div>
           <div className="text-3xl font-bold font-mono text-ink mt-1">$142.50</div>
           <div className="text-[10px] text-up-dark font-bold font-mono mt-0.5">+$42.50 profit</div>
@@ -163,7 +163,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
             <div
               key={i}
               className={`h-1.5 rounded-full transition-all ${
-                i === step ? "w-6 bg-ink" : "w-1.5 bg-ink/20"
+                i === step ? "w-6 bg-amber" : "w-1.5 bg-amber/20"
               }`}
             />
           ))}
@@ -172,7 +172,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
         {/* Next button */}
         <button
           onClick={next}
-          className="w-full py-3.5 rounded-xl text-sm font-bold bg-ink text-white active:scale-[0.98] transition-transform"
+          className="w-full py-3.5 rounded-xl text-sm font-bold bg-amber text-charcoal active:scale-[0.98] transition-transform"
         >
           {isLast ? "Start Trading" : "Next"}
         </button>

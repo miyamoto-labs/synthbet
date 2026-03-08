@@ -60,7 +60,7 @@ export function Portfolio() {
 
   if (bets.length === 0) {
     return (
-      <div className="bg-card rounded-2xl p-8 text-center shadow-sm border border-ink/5">
+      <div className="bg-card rounded-2xl p-8 text-center shadow-sm border border-amber/10">
         <div className="text-2xl mb-2">📊</div>
         <div className="text-muted text-sm">
           No bets placed yet. Pick a market and go!
@@ -125,17 +125,17 @@ export function Portfolio() {
     <div className="space-y-3">
       {/* Summary stats */}
       <div className="grid grid-cols-3 gap-2">
-        <div className="bg-card rounded-xl p-3 text-center shadow-sm border border-ink/5">
+        <div className="bg-card rounded-xl p-3 text-center shadow-sm border border-amber/10">
           <div className="text-lg font-bold font-mono text-ink">{totalBets}</div>
           <div className="text-[10px] text-muted font-medium">Bets</div>
         </div>
-        <div className="bg-card rounded-xl p-3 text-center shadow-sm border border-ink/5">
+        <div className="bg-card rounded-xl p-3 text-center shadow-sm border border-amber/10">
           <div className="text-lg font-bold font-mono text-ink">
             ${totalSpent.toFixed(0)}
           </div>
           <div className="text-[10px] text-muted font-medium">Wagered</div>
         </div>
-        <div className="bg-card rounded-xl p-3 text-center shadow-sm border border-ink/5">
+        <div className="bg-card rounded-xl p-3 text-center shadow-sm border border-amber/10">
           <div
             className={`text-lg font-bold font-mono ${
               totalPnl >= 0 ? "text-up-dark" : "text-down"
@@ -154,7 +154,7 @@ export function Portfolio() {
         <button
           onClick={claimWinnings}
           disabled={redeeming}
-          className="w-full py-3 rounded-xl text-sm font-bold transition-all active:scale-[0.98] bg-up text-ink shadow-sm disabled:opacity-50"
+          className="w-full py-3 rounded-xl text-sm font-bold transition-all active:scale-[0.98] bg-amber text-charcoal shadow-sm disabled:opacity-50"
         >
           {redeeming ? "Claiming..." : "Claim Winnings to USDC"}
         </button>
@@ -180,7 +180,7 @@ export function Portfolio() {
       {bets.map((bet) => (
         <div
           key={bet.id}
-          className="bg-card rounded-xl p-3 shadow-sm border border-ink/5"
+          className="bg-card rounded-xl p-3 shadow-sm border border-amber/10"
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">

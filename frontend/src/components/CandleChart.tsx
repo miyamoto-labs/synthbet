@@ -271,7 +271,7 @@ export function CandleChart({ asset, timeframe }: CandleChartProps) {
             />
             <text
               x={W - 2} y={toY(p) - 2}
-              textAnchor="end" fill="#6b6b6b" fontSize={6.5} fontFamily="monospace" opacity={0.5}
+              textAnchor="end" fill="#C4A882" fontSize={6.5} fontFamily="monospace" opacity={0.5}
             >
               {formatPrice(p)}
             </text>
@@ -336,34 +336,34 @@ export function CandleChart({ asset, timeframe }: CandleChartProps) {
           <>
             <line
               x1={tooltip.x} y1={PAD_T} x2={tooltip.x} y2={H - PAD_B}
-              stroke="#6b6b6b" strokeWidth={0.5} strokeDasharray="2,2" opacity={0.5}
+              stroke="#C4A882" strokeWidth={0.5} strokeDasharray="2,2" opacity={0.5}
             />
             <circle
               cx={tooltip.x} cy={toY(tooltip.candle.c)} r={3}
               fill={tooltip.candle.c >= tooltip.candle.o ? "#00c853" : "#ff3d57"}
-              stroke="white" strokeWidth={1}
+              stroke="#1C1611" strokeWidth={1}
             />
             {/* OHLC tooltip box */}
             <rect
               x={Math.min(tooltip.x + 6, W - 70)} y={PAD_T}
               width={66} height={36} rx={3}
-              fill="#111" opacity={0.85}
+              fill="#2C1F14" opacity={0.92}
             />
             <text
               x={Math.min(tooltip.x + 10, W - 66)} y={PAD_T + 10}
-              fill="#999" fontSize={6} fontFamily="monospace"
+              fill="#C4A882" fontSize={6} fontFamily="monospace"
             >
               O {formatPrice(tooltip.candle.o)} H {formatPrice(tooltip.candle.h)}
             </text>
             <text
               x={Math.min(tooltip.x + 10, W - 66)} y={PAD_T + 20}
-              fill="#999" fontSize={6} fontFamily="monospace"
+              fill="#C4A882" fontSize={6} fontFamily="monospace"
             >
               L {formatPrice(tooltip.candle.l)} C {formatPrice(tooltip.candle.c)}
             </text>
             <text
               x={Math.min(tooltip.x + 10, W - 66)} y={PAD_T + 30}
-              fill="#ccc" fontSize={6.5} fontFamily="monospace" fontWeight="bold"
+              fill="#FFFFFF" fontSize={6.5} fontFamily="monospace" fontWeight="bold"
             >
               {formatTime(tooltip.candle.t)}
             </text>

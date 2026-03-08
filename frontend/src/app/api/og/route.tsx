@@ -18,10 +18,7 @@ export async function GET(req: NextRequest) {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: "#f4f2ee",
-          backgroundImage:
-            "radial-gradient(circle, #c8c4bc 0.8px, transparent 0.8px)",
-          backgroundSize: "24px 24px",
+          backgroundColor: "#1C1611",
           fontFamily: "system-ui, sans-serif",
         }}
       >
@@ -38,18 +35,20 @@ export async function GET(req: NextRequest) {
             style={{
               fontSize: 64,
               fontWeight: 700,
-              color: "#111111",
+              color: "#FFFFFF",
               letterSpacing: "-2px",
               lineHeight: 1,
+              display: "flex",
+              alignItems: "baseline",
             }}
           >
-            SynthBet
+            Déja<span style={{ color: "#C8843A" }}>.</span>
           </div>
           <div
             style={{
               fontSize: 32,
               fontWeight: 700,
-              color: "#111111",
+              color: "#FFFFFF",
               marginTop: 24,
               textAlign: "center",
               lineHeight: 1.2,
@@ -61,7 +60,7 @@ export async function GET(req: NextRequest) {
             <div
               style={{
                 fontSize: 20,
-                color: "#6b6b6b",
+                color: "#C4A882",
                 marginTop: 12,
                 textAlign: "center",
               }}

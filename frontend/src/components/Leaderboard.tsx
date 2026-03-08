@@ -40,7 +40,7 @@ export function Leaderboard() {
 
   if (entries.length === 0) {
     return (
-      <div className="bg-card rounded-2xl p-8 text-center shadow-sm border border-ink/5">
+      <div className="bg-card rounded-2xl p-8 text-center shadow-sm border border-amber/10">
         <div className="text-2xl mb-2">🏆</div>
         <div className="text-muted text-sm">
           No bets placed yet. Be the first on the leaderboard!

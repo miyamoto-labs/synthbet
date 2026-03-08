@@ -153,13 +153,13 @@ export function BetButtons({
             bounceDir === "UP" ? "animate-spring" : ""
           } ${
             direction === "UP"
-              ? "bg-up text-ink scale-[1.02] shadow-lg shadow-up/30 ring-2 ring-up/40"
-              : "bg-up text-ink shadow-sm hover:shadow-md hover:shadow-up/20"
+              ? "bg-up text-charcoal scale-[1.02] shadow-lg shadow-up/30 ring-2 ring-up/40"
+              : "bg-up text-charcoal shadow-sm hover:shadow-md hover:shadow-up/20"
           } ${disabled || noWallet ? "opacity-50" : ""}`}
         >
           UP
           {recommendedDirection === "UP" && (
-            <span className="absolute -top-1.5 -right-1.5 bg-up-dark text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-sm">
+            <span className="absolute -top-1.5 -right-1.5 bg-amber text-charcoal text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-sm">
               EDGE
             </span>
           )}
@@ -177,7 +177,7 @@ export function BetButtons({
         >
           DOWN
           {recommendedDirection === "DOWN" && (
-            <span className="absolute -top-1.5 -right-1.5 bg-down text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-sm">
+            <span className="absolute -top-1.5 -right-1.5 bg-amber text-charcoal text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-sm">
               EDGE
             </span>
           )}
@@ -236,7 +236,7 @@ export function BetButtons({
                   onClick={() => setSlippage(opt.value)}
                   className={`flex-1 py-1 rounded-md text-[10px] font-bold transition-all ${
                     slippage === opt.value
-                      ? "bg-ink text-white"
+                      ? "bg-amber text-charcoal"
                       : "bg-ink/5 text-muted border border-ink/8"
                   }`}
                 >
@@ -252,7 +252,7 @@ export function BetButtons({
                 key={amt}
                 onClick={() => { playChipToss(); haptic("light"); setChipFly(true); setTimeout(() => setChipFly(false), 600); placeBet(amt); }}
                 disabled={loading || noBalance}
-                className="py-2 bg-ink/5 hover:bg-ink/10 text-ink rounded-lg text-sm font-mono font-bold transition-all border border-ink/8 disabled:opacity-50 active:scale-95"
+                className="py-2 bg-ink/5 hover:bg-amber/10 text-ink rounded-lg text-sm font-mono font-bold transition-all border border-amber/10 disabled:opacity-50 active:scale-95"
               >
                 {loading ? "..." : `$${amt}`}
               </button>
@@ -261,7 +261,7 @@ export function BetButtons({
             {chipFly && (
               <div className="absolute left-1/2 bottom-0 -translate-x-1/2 pointer-events-none">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold animate-chip-fly ${
-                  direction === "UP" ? "bg-up text-ink" : "bg-down text-white"
+                  direction === "UP" ? "bg-up text-charcoal" : "bg-down text-white"
                 }`}>
                   $
                 </div>
@@ -278,7 +278,7 @@ export function BetButtons({
               value={customAmount}
               onChange={(e) => { playChipToss(); setCustomAmount(e.target.value); }}
               disabled={loading || noBalance}
-              className="flex-1 py-2 px-3 bg-ink/5 text-ink rounded-lg text-sm font-mono font-bold border border-ink/8 placeholder:text-muted/50 disabled:opacity-50 outline-none focus:ring-2 focus:ring-ink/20"
+              className="flex-1 py-2 px-3 bg-ink/5 text-ink rounded-lg text-sm font-mono font-bold border border-amber/10 placeholder:text-muted/50 disabled:opacity-50 outline-none focus:ring-2 focus:ring-amber/20"
             />
             <button
               onClick={() => {
@@ -287,7 +287,7 @@ export function BetButtons({
                 else setError("Custom amount must be $5\u2013$100");
               }}
               disabled={loading || noBalance || !customAmount}
-              className="px-4 py-2 bg-ink text-white rounded-lg text-sm font-bold disabled:opacity-50 active:translate-y-px"
+              className="px-4 py-2 bg-amber text-charcoal rounded-lg text-sm font-bold disabled:opacity-50 active:translate-y-px"
             >
               {loading ? "..." : "Go"}
             </button>

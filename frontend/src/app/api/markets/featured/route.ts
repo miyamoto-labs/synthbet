@@ -28,12 +28,24 @@ export type FeaturedMarket = {
   noPrice: number;
   clobTokenIds: string[];
   conditionId: string;
-  // Labels for the two sides (e.g., "Celtics" / "Cavaliers" or "Yes" / "No")
+  category: string;
+  description: string;
   yesLabel: string;
   noLabel: string;
-  // For head-to-head markets, the NO side is a separate market slug
   noSlug: string | null;
 };
+
+function normalizeCategory(raw: string, question: string): string {
+  const lower = (raw || "").toLowerCase();
+  const q = (question || "").toLowerCase();
+  if (lower.includes("sport") || lower.includes("nba") || lower.includes("nfl") || lower.includes("mlb") || lower.includes("soccer") || lower.includes("mma") || lower.includes("ufc") || lower.includes("nhl") || lower.includes("epl") || lower.includes("f1") || /\bvs\.?\b/.test(q)) return "Sports";
+  if (lower.includes("politic") || lower.includes("elect") || q.includes("trump") || q.includes("biden") || q.includes("congress") || q.includes("president")) return "Politics";
+  if (lower.includes("crypto") || lower.includes("bitcoin") || lower.includes("defi")) return "Crypto";
+  if (lower.includes("pop culture") || lower.includes("entertainment") || lower.includes("celeb") || lower.includes("movie") || lower.includes("music") || lower.includes("award")) return "Entertainment";
+  if (lower.includes("science") || lower.includes("tech") || q.includes("ai ") || q.includes("openai") || q.includes("google") || q.includes("apple")) return "Tech";
+  if (lower.includes("finance") || lower.includes("econ") || q.includes("fed ") || q.includes("interest rate") || q.includes("inflation") || q.includes("tariff")) return "Finance";
+  return "Other";
+}
 
 // Try to detect head-to-head sports markets from the question
 // e.g., "Celtics vs. Cavaliers", "India vs New Zealand"
@@ -47,7 +59,7 @@ async function fetchTrendingMarkets(): Promise<FeaturedMarket[]> {
   try {
     // Fetch individual markets sorted by 24h volume
     const res = await fetch(
-      `${GAMMA_URL}/markets?active=true&closed=false&order=volume24hr&ascending=false&limit=50`,
+      `${GAMMA_URL}/markets?active=true&closed=false&order=volume24hr&ascending=false&limit=80`,
       { cache: "no-store" }
     );
     if (!res.ok) {
@@ -127,6 +139,7 @@ async function fetchTrendingMarkets(): Promise<FeaturedMarket[]> {
       results.push({
         slug: m.slug,
         question: displayQuestion,
+        description: (m.description || "").slice(0, 120),
         image: m.image || "",
         endDate: m.endDate || "",
         volume: vol,
@@ -135,12 +148,13 @@ async function fetchTrendingMarkets(): Promise<FeaturedMarket[]> {
         noPrice,
         clobTokenIds: clobIds,
         conditionId: m.conditionId || "",
+        category: normalizeCategory(m.groupItemTitle || m.category || "", question),
         yesLabel,
         noLabel,
         noSlug,
       });
 
-      if (results.length >= 10) break;
+      if (results.length >= 25) break;
     }
 
     return results;

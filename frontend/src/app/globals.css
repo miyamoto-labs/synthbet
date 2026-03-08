@@ -5,20 +5,20 @@
 :root {
   --bg: #1C1611;
   --card: #2C1F14;
-  --ink: #F5EFE0;
-  --muted: #8B6347;
+  --ink: #FFFFFF;
+  --muted: #C4A882;
   --amber: #C8843A;
   --amber-light: #E4A95A;
   --dusty-rose: #C4967A;
   --sage: #7A8C6E;
   --charcoal: #1C1611;
   --brown-dark: #2C1F14;
-  --brown-soft: #8B6347;
+  --brown-soft: #C4A882;
 
   /* Telegram overrides */
   --tg-theme-bg-color: #1C1611;
-  --tg-theme-text-color: #F5EFE0;
-  --tg-theme-hint-color: #8B6347;
+  --tg-theme-text-color: #FFFFFF;
+  --tg-theme-hint-color: #C4A882;
   --tg-theme-link-color: #C8843A;
   --tg-theme-button-color: #C8843A;
   --tg-theme-button-text-color: #1C1611;

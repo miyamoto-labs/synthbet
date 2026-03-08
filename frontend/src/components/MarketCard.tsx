@@ -15,15 +15,15 @@ const ASSET_ICONS: Record<string, string> = {
 };
 
 const ASSET_BG_COLORS: Record<string, string> = {
-  BTC: "#fff3e0",
-  ETH: "#e8eaf6",
-  SOL: "#f3e5f5",
+  BTC: "rgba(200,132,58,0.15)",
+  ETH: "rgba(98,126,234,0.15)",
+  SOL: "rgba(153,69,255,0.15)",
 };
 
 const ASSET_TEXT_COLORS: Record<string, string> = {
-  BTC: "#f7931a",
-  ETH: "#627eea",
-  SOL: "#9945ff",
+  BTC: "#E4A95A",
+  ETH: "#8b9fe6",
+  SOL: "#b87fff",
 };
 
 type MarketCardProps = {
@@ -80,7 +80,7 @@ function Countdown({ endTime }: { endTime: string }) {
       className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-md ${
         urgent
           ? "bg-down/15 text-down animate-pulse"
-          : "bg-ink/8 text-muted"
+          : "bg-amber/10 text-amber-light"
       }`}
     >
       {remaining === "Expired" ? "Expired" : `${remaining}`}
@@ -130,7 +130,7 @@ export function MarketCard({ asset, min15, hourly, daily, onBetPlaced, onMarketE
 
   return (
     <div
-      className="bg-card rounded-2xl p-4 space-y-4 animate-card-enter shadow-sm border border-ink/5"
+      className="bg-card rounded-2xl p-4 space-y-4 animate-card-enter border border-amber/10"
       style={{ animationDelay: `${index * 0.1}s` }}
     >
       {/* Header */}
@@ -138,7 +138,7 @@ export function MarketCard({ asset, min15, hourly, daily, onBetPlaced, onMarketE
         <div className="flex items-center gap-3">
           <div
             className="w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold"
-            style={{ backgroundColor: ASSET_BG_COLORS[asset] || "#f5f5f5", color: ASSET_TEXT_COLORS[asset] || "#333" }}
+            style={{ backgroundColor: ASSET_BG_COLORS[asset] || "rgba(200,132,58,0.1)", color: ASSET_TEXT_COLORS[asset] || "#E4A95A" }}
           >
             {ASSET_ICONS[asset] || asset[0]}
           </div>
@@ -183,7 +183,7 @@ export function MarketCard({ asset, min15, hourly, daily, onBetPlaced, onMarketE
           </span>
         </div>
       ) : (
-        <div className="rounded-xl px-3 py-2.5 flex items-center gap-2.5 bg-ink/5 border border-ink/8">
+        <div className="rounded-xl px-3 py-2.5 flex items-center gap-2.5 bg-ink/4 border border-ink/8">
           <span className="w-2 h-2 rounded-full bg-muted/40" />
           <span className="text-sm font-medium text-muted">
             No edge — models agree ({absEdge.toFixed(0)}% diff)
@@ -202,10 +202,10 @@ export function MarketCard({ asset, min15, hourly, daily, onBetPlaced, onMarketE
               disabled={!hasData}
               className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                 activeTf === tf
-                  ? "bg-card text-ink shadow-sm border border-ink/10"
+                  ? "bg-amber text-charcoal"
                   : hasData
-                  ? "bg-ink/5 text-muted"
-                  : "bg-ink/3 text-muted/30 cursor-not-allowed"
+                  ? "bg-ink/8 text-ink/60 hover:bg-ink/12"
+                  : "bg-ink/4 text-muted/30 cursor-not-allowed"
               }`}
             >
               {tf === "15m" ? "15 Min" : tf === "1h" ? "1 Hour" : "Daily"}
@@ -265,7 +265,7 @@ export function MarketCard({ asset, min15, hourly, daily, onBetPlaced, onMarketE
 
       {/* Bet buttons or expired state */}
       {isExpired ? (
-        <div className="rounded-xl px-3 py-3 bg-ink/5 border border-ink/8 text-center animate-pulse">
+        <div className="rounded-xl px-3 py-3 bg-amber/5 border border-amber/10 text-center animate-pulse">
           <span className="text-sm text-muted font-medium">
             Loading next market...
           </span>

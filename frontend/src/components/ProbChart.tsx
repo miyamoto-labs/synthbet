@@ -116,11 +116,11 @@ export function ProbChart({ slug, synthProb, label }: ProbChartProps) {
         <span className="text-[10px] text-muted font-semibold">{label}</span>
         <div className="flex items-center gap-3">
           <span className="flex items-center gap-1">
-            <span className="w-2 h-0.5 bg-[#627eea] rounded-full inline-block" />
+            <span className="w-2 h-0.5 bg-[#C4A882] rounded-full inline-block" />
             <span className="text-[9px] text-muted">Market {(currentProb * 100).toFixed(0)}%</span>
           </span>
           <span className="flex items-center gap-1">
-            <span className="w-2 h-0.5 bg-[#f7931a] rounded-full inline-block" />
+            <span className="w-2 h-0.5 bg-[#C8843A] rounded-full inline-block" />
             <span className="text-[9px] text-muted">Synth {(synthProb * 100).toFixed(0)}%</span>
           </span>
         </div>
@@ -175,13 +175,13 @@ export function ProbChart({ slug, synthProb, label }: ProbChartProps) {
         ))}
 
         {/* Area fill */}
-        <path d={areaPath} fill="#627eea" fillOpacity={0.08} />
+        <path d={areaPath} fill="#C4A882" fillOpacity={0.08} />
 
         {/* Market probability line */}
         <path
           d={linePath}
           fill="none"
-          stroke="#627eea"
+          stroke="#C4A882"
           strokeWidth={1.5}
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -193,7 +193,7 @@ export function ProbChart({ slug, synthProb, label }: ProbChartProps) {
           y1={synthY}
           x2={CHART_W - PAD_R}
           y2={synthY}
-          stroke="#f7931a"
+          stroke="#C8843A"
           strokeWidth={1}
           strokeDasharray="4,3"
           strokeOpacity={0.8}
@@ -204,7 +204,7 @@ export function ProbChart({ slug, synthProb, label }: ProbChartProps) {
           cx={toX(lastPoint.t)}
           cy={toY(lastPoint.p)}
           r={3}
-          fill="#627eea"
+          fill="#C4A882"
           stroke="white"
           strokeWidth={1}
         />
@@ -214,7 +214,7 @@ export function ProbChart({ slug, synthProb, label }: ProbChartProps) {
           cx={CHART_W - PAD_R}
           cy={synthY}
           r={2.5}
-          fill="#f7931a"
+          fill="#C8843A"
           stroke="white"
           strokeWidth={1}
         />

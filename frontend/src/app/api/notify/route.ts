@@ -60,7 +60,7 @@ async function sendTelegramPhoto(imageUrl: string, caption: string, appUrl: stri
       parse_mode: "HTML",
       reply_markup: {
         inline_keyboard: [
-          [{ text: "Open SynthBet", web_app: { url: appUrl } }],
+          [{ text: "Open Déja.", web_app: { url: appUrl } }],
         ],
       },
     }),
@@ -176,7 +176,7 @@ export async function GET(req: Request) {
   );
 
   const caption =
-    `⚡ <b>Edge Alert — ${signals.length} trade signal${signals.length > 1 ? "s" : ""}</b>\n\n` +
+    `⚡ <b>Déja. Edge Alert — ${signals.length} trade signal${signals.length > 1 ? "s" : ""}</b>\n\n` +
     lines.join("\n\n") +
     `\n\n<i>Powered by Synth Monte Carlo · Real USDC on Polymarket</i>`;
 
