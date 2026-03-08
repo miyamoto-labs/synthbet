@@ -185,7 +185,7 @@ export function CandleChart({ asset, timeframe }: CandleChartProps) {
 
   if (loading) {
     return (
-      <div className="h-[120px] bg-ink/3 rounded-xl flex items-center justify-center animate-shimmer">
+      <div className="h-[100px] bg-ink/3 rounded-xl flex items-center justify-center animate-shimmer">
         <span className="text-[10px] text-muted font-mono">Loading chart...</span>
       </div>
     );
@@ -254,7 +254,7 @@ export function CandleChart({ asset, timeframe }: CandleChartProps) {
       <svg
         ref={svgRef}
         viewBox={`0 0 ${W} ${H}`}
-        className="w-full h-auto touch-none"
+        className="w-full touch-none" style={{ maxHeight: 140 }}
         preserveAspectRatio="xMidYMid meet"
         onTouchStart={(e) => handleTouch(e.touches[0].clientX)}
         onTouchMove={(e) => { e.preventDefault(); handleTouch(e.touches[0].clientX); }}
