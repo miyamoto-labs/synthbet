@@ -10,7 +10,7 @@ import type { LiveBet } from "@/components/LiveBetView";
 import { playBetPlaced, playWin, playLose } from "@/lib/sounds";
 import { Confetti } from "@/components/Confetti";
 import { Onboarding } from "@/components/Onboarding";
-import { FeaturedMarkets } from "@/components/FeaturedMarkets";
+import { FeaturedMarkets, CategoryPills, useFeaturedMarkets } from "@/components/FeaturedMarkets";
 import { Feed } from "@/components/Feed";
 import {
   getTelegramWebApp,
@@ -205,6 +205,8 @@ export default function Home() {
   });
   const [liveBets, setLiveBets] = useState<LiveBet[]>([]);
   const [liveBetOpen, setLiveBetOpen] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState("All");
+  const { markets: featuredMarkets, loading: featuredLoading, categories: featuredCategories } = useFeaturedMarkets();
   const [resultToast, setResultToast] = useState<{ type: "won" | "lost"; text: string } | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
   const knownResolvedIds = useRef(new Set<number>());
@@ -716,63 +718,81 @@ export default function Home() {
                 onBetPlaced={handleBetPlaced}
               />
             )}
-            {loading ? (
-              <div className="space-y-4">
-                {[1, 2, 3].map((i) => (
-                  <div
-                    key={i}
-                    className="bg-card rounded-2xl p-4 animate-pulse h-64 shadow-sm"
-                  />
-                ))}
-              </div>
-            ) : markets.length === 0 ? (
-              <div className="bg-card rounded-2xl p-8 text-center shadow-sm space-y-3">
-                <div className="text-muted">
-                  Failed to load markets.
-                </div>
-                <button
-                  onClick={refreshMarkets}
-                  disabled={refreshing}
-                  className="px-4 py-2 bg-ink/10 hover:bg-ink/15 text-ink rounded-xl text-sm font-semibold transition-colors disabled:opacity-50"
-                >
-                  {refreshing ? "Refreshing..." : "Refresh"}
-                </button>
-              </div>
-            ) : (
-              [...markets]
-                .sort((a, b) => {
-                  // Put the deep-linked asset first
-                  const dl = deepLink.current.asset;
-                  if (!dl) return 0;
-                  if (a.asset === dl && b.asset !== dl) return -1;
-                  if (b.asset === dl && a.asset !== dl) return 1;
-                  return 0;
-                })
-                .map((m, i) => (
-                <MarketCard
-                  key={m.asset}
-                  asset={m.asset}
-                  index={i}
-                  min15={m["15min"]}
-                  hourly={m.hourly}
-                  daily={m.daily}
-                  onBetPlaced={handleBetPlaced}
-                  onMarketExpired={refreshMarkets}
-                  walletAddress={walletAddress}
-                  balance={balance}
-                  initialTimeframe={
-                    m.asset === deepLink.current.asset
-                      ? (deepLink.current.tf as "15m" | "1h" | "daily") || undefined
-                      : undefined
-                  }
-                />
-              ))
+
+            {/* Category filter pills — above everything */}
+            {featuredCategories.length > 2 && (
+              <CategoryPills
+                categories={featuredCategories}
+                selected={selectedCategory}
+                onSelect={setSelectedCategory}
+              />
             )}
 
-            {/* Featured / Fun Markets */}
+            {/* BTC / ETH / SOL up-down markets (show for All or Crypto) */}
+            {(selectedCategory === "All" || selectedCategory === "Crypto") && (
+              <>
+                {loading ? (
+                  <div className="space-y-4">
+                    {[1, 2, 3].map((i) => (
+                      <div
+                        key={i}
+                        className="bg-card rounded-2xl p-4 animate-pulse h-64 shadow-sm"
+                      />
+                    ))}
+                  </div>
+                ) : markets.length === 0 ? (
+                  <div className="bg-card rounded-2xl p-8 text-center shadow-sm space-y-3">
+                    <div className="text-muted">
+                      Failed to load markets.
+                    </div>
+                    <button
+                      onClick={refreshMarkets}
+                      disabled={refreshing}
+                      className="px-4 py-2 bg-ink/10 hover:bg-ink/15 text-ink rounded-xl text-sm font-semibold transition-colors disabled:opacity-50"
+                    >
+                      {refreshing ? "Refreshing..." : "Refresh"}
+                    </button>
+                  </div>
+                ) : (
+                  [...markets]
+                    .sort((a, b) => {
+                      // Put the deep-linked asset first
+                      const dl = deepLink.current.asset;
+                      if (!dl) return 0;
+                      if (a.asset === dl && b.asset !== dl) return -1;
+                      if (b.asset === dl && a.asset !== dl) return 1;
+                      return 0;
+                    })
+                    .map((m, i) => (
+                    <MarketCard
+                      key={m.asset}
+                      asset={m.asset}
+                      index={i}
+                      min15={m["15min"]}
+                      hourly={m.hourly}
+                      daily={m.daily}
+                      onBetPlaced={handleBetPlaced}
+                      onMarketExpired={refreshMarkets}
+                      walletAddress={walletAddress}
+                      balance={balance}
+                      initialTimeframe={
+                        m.asset === deepLink.current.asset
+                          ? (deepLink.current.tf as "15m" | "1h" | "daily") || undefined
+                          : undefined
+                      }
+                    />
+                  ))
+                )}
+              </>
+            )}
+
+            {/* Featured / Trending Markets */}
             <FeaturedMarkets
               walletAddress={walletAddress}
               balance={balance}
+              selectedCategory={selectedCategory}
+              markets={featuredMarkets}
+              loading={featuredLoading}
               onBetPlaced={handleBetPlaced}
             />
 

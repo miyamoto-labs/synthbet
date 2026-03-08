@@ -25,6 +25,9 @@ type FeaturedMarket = {
 type Props = {
   walletAddress: string | null;
   balance: number | null;
+  selectedCategory: string;
+  markets: FeaturedMarket[];
+  loading: boolean;
   onBetPlaced: (info: {
     asset: string;
     direction: string;
@@ -88,9 +91,9 @@ function useCountdown(endDate: string) {
   return { text, urgent };
 }
 
-// ── Category Pills ──
+// ── Category Pills (exported for use in page.tsx) ──
 
-function CategoryPills({
+export function CategoryPills({
   categories,
   selected,
   onSelect,
@@ -395,10 +398,10 @@ function MarketBetCard({
 
 // ── Main Component ──
 
-export function FeaturedMarkets({ walletAddress, balance, onBetPlaced }: Props) {
+// Hook to fetch featured markets + derive categories (used in page.tsx)
+export function useFeaturedMarkets() {
   const [markets, setMarkets] = useState<FeaturedMarket[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState("All");
 
   const fetchMarkets = useCallback(async () => {
     try {
@@ -418,7 +421,6 @@ export function FeaturedMarkets({ walletAddress, balance, onBetPlaced }: Props) 
     return () => clearInterval(interval);
   }, [fetchMarkets]);
 
-  // Derive categories with counts
   const categories = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const m of markets) {
@@ -427,9 +429,14 @@ export function FeaturedMarkets({ walletAddress, balance, onBetPlaced }: Props) 
     const sorted = Object.entries(counts)
       .sort((a, b) => b[1] - a[1])
       .map(([name, count]) => ({ name, count }));
-    return [{ name: "All", count: markets.length }, ...sorted];
+    // "All" count includes the 3 synth crypto markets
+    return [{ name: "All", count: markets.length + 3 }, ...sorted.map(c => c.name === "Crypto" ? { ...c, count: c.count + 3 } : c)];
   }, [markets]);
 
+  return { markets, loading, categories };
+}
+
+export function FeaturedMarkets({ walletAddress, balance, selectedCategory, markets, loading, onBetPlaced }: Props) {
   // Filter by selected category
   const filtered = useMemo(() => {
     if (selectedCategory === "All") return markets;
@@ -461,25 +468,21 @@ export function FeaturedMarkets({ walletAddress, balance, onBetPlaced }: Props) 
   }
 
   if (markets.length === 0) return null;
+  // If filtering shows nothing and we're on a specific category, show empty state
+  // But if it's Crypto, the BTC/ETH/SOL cards handle that above — skip entirely
+  if (filtered.length === 0 && selectedCategory === "Crypto") return null;
 
   return (
     <div className="space-y-3">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold text-white">Trending Markets</h2>
+        <h2 className="text-lg font-bold text-white">
+          {selectedCategory === "All" ? "Trending Markets" : selectedCategory}
+        </h2>
         <span className="text-[10px] text-white/40 font-mono">
-          {markets.length} live
+          {filtered.length} live
         </span>
       </div>
-
-      {/* Category filter pills */}
-      {categories.length > 2 && (
-        <CategoryPills
-          categories={categories}
-          selected={selectedCategory}
-          onSelect={setSelectedCategory}
-        />
-      )}
 
       {/* Market cards */}
       {filtered.length === 0 ? (
