@@ -2,8 +2,8 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "SynthBet — AI-Powered Crypto Predictions",
-  description: "Bet on BTC/ETH/SOL using Synth's Monte Carlo predictions",
+  title: "Déja. — Prediction Markets",
+  description: "AI-powered prediction markets. Where the future feels familiar.",
 };
 
 export const viewport: Viewport = {
@@ -22,12 +22,12 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <link
-          href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap"
+          href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400;1,500&family=Jost:wght@300;400;500;600&family=DM+Mono:wght@300;400&display=swap"
           rel="stylesheet"
         />
         <script src="https://telegram.org/js/telegram-web-app.js" />
       </head>
-      <body className="bg-bg text-ink antialiased font-sans">
+      <body className="bg-bg text-ink antialiased font-sans font-light">
         {children}
       </body>
     </html>

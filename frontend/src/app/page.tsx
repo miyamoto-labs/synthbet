@@ -282,9 +282,9 @@ export default function Home() {
         // Prevent pull-to-close — we want full control of the viewport
         disableVerticalSwipes();
         // Set brand colors for the native chrome
-        setHeaderColor("#f4f2ee");
-        setBackgroundColor("#f4f2ee");
-        setBottomBarColor("#f4f2ee");
+        setHeaderColor("#1C1611");
+        setBackgroundColor("#1C1611");
+        setBottomBarColor("#2C1F14");
       }
     } catch {}
 
@@ -549,7 +549,13 @@ export default function Home() {
   if (showSplash) {
     return (
       <div className="fixed inset-0 bg-bg flex flex-col items-center justify-center z-50 overflow-hidden">
-        {/* Animated price line drawing behind logo */}
+        {/* Amber glow behind logo */}
+        <div
+          className="absolute w-64 h-64 rounded-full opacity-0 animate-splash-glow"
+          style={{ background: "radial-gradient(circle, rgba(200,132,58,0.15) 0%, transparent 70%)" }}
+        />
+
+        {/* Animated line */}
         <svg
           viewBox="0 0 400 120"
           className="absolute w-[120%] opacity-0 animate-splash-line"
@@ -566,51 +572,44 @@ export default function Home() {
           />
           <defs>
             <linearGradient id="splashGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#00e676" stopOpacity="0" />
-              <stop offset="30%" stopColor="#00e676" stopOpacity="0.4" />
-              <stop offset="70%" stopColor="#00e676" stopOpacity="0.3" />
-              <stop offset="100%" stopColor="#00e676" stopOpacity="0" />
+              <stop offset="0%" stopColor="#C8843A" stopOpacity="0" />
+              <stop offset="30%" stopColor="#C8843A" stopOpacity="0.4" />
+              <stop offset="70%" stopColor="#E4A95A" stopOpacity="0.3" />
+              <stop offset="100%" stopColor="#C8843A" stopOpacity="0" />
             </linearGradient>
           </defs>
         </svg>
 
-        {/* Glow behind title */}
-        <div
-          className="absolute w-48 h-48 rounded-full opacity-0 animate-splash-glow"
-          style={{ background: "radial-gradient(circle, rgba(0,230,118,0.12) 0%, transparent 70%)" }}
-        />
-
-        {/* Title with shimmer */}
-        <h1 className="text-5xl font-bold tracking-tight text-ink animate-scale-in relative">
+        {/* Logo */}
+        <h1 className="font-serif text-6xl tracking-tight text-ink animate-scale-in relative">
           <span className="relative">
-            Synth
-            <span className="text-up-dark">Bet</span>
-            <span className="absolute inset-0 animate-splash-shimmer bg-gradient-to-r from-transparent via-white/20 to-transparent bg-[length:200%_100%]" />
+            D&eacute;ja<span className="text-amber">.</span>
+            <span className="absolute inset-0 animate-splash-shimmer bg-gradient-to-r from-transparent via-amber/10 to-transparent bg-[length:200%_100%]" />
           </span>
         </h1>
 
-        {/* Subtitle — staggered */}
+        {/* Tagline */}
         <p
-          className="text-sm font-mono text-muted mt-3 opacity-0 animate-fade-up"
+          className="font-display italic text-sm text-rose mt-3 opacity-0 animate-fade-up"
           style={{ animationDelay: "0.4s", animationFillMode: "forwards" }}
         >
-          AI-powered crypto predictions
+          You knew it all along.
         </p>
 
-        {/* Tagline — staggered */}
+        {/* Sub */}
         <p
-          className="text-[11px] font-mono text-muted/60 mt-1 opacity-0 animate-fade-up"
+          className="text-[10px] font-mono text-muted/60 mt-2 opacity-0 animate-fade-up tracking-widest uppercase"
           style={{ animationDelay: "0.7s", animationFillMode: "forwards" }}
         >
-          BTC &middot; ETH &middot; SOL
+          Prediction markets
         </p>
 
-        {/* Loading bar instead of dots */}
+        {/* Loading bar */}
         <div
           className="mt-8 w-32 h-0.5 rounded-full bg-ink/10 overflow-hidden opacity-0 animate-fade-up"
           style={{ animationDelay: "0.9s", animationFillMode: "forwards" }}
         >
-          <div className="h-full rounded-full bg-up animate-splash-progress" />
+          <div className="h-full rounded-full bg-amber animate-splash-progress" />
         </div>
       </div>
     );
@@ -628,7 +627,7 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen pb-20">
+    <main className="min-h-screen pb-24">
       {/* Global confetti */}
       <Confetti active={showConfetti} />
 
@@ -636,8 +635,8 @@ export default function Home() {
       {resultToast && (
         <div className={`fixed top-6 left-4 right-4 z-[70] rounded-xl px-4 py-3 shadow-lg border animate-slide-down text-center ${
           resultToast.type === "won"
-            ? "bg-up/95 border-up text-ink"
-            : "bg-down/95 border-down text-white"
+            ? "bg-sage/90 border-sage text-ink"
+            : "bg-rose/90 border-rose text-charcoal"
         }`}>
           <div className="text-sm font-bold">{resultToast.type === "won" ? "You Won!" : "You Lost"}</div>
           <div className="text-xs font-mono mt-0.5 opacity-80">{resultToast.text}</div>
@@ -645,22 +644,22 @@ export default function Home() {
       )}
 
       {/* Header */}
-      <div className="px-4 pt-6 pb-3">
+      <div className="px-4 pt-5 pb-3">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-ink">
-              SynthBet
+            <h1 className="font-serif text-2xl tracking-tight text-ink">
+              D&eacute;ja<span className="text-amber">.</span>
             </h1>
-            <p className="text-xs font-mono text-muted mt-0.5">
-              AI edge + fun markets
+            <p className="text-[10px] font-mono text-muted mt-0.5 tracking-wider uppercase">
+              Prediction markets
             </p>
           </div>
           <div className="text-right">
             {balance !== null && (
-              <div className="bg-card rounded-xl px-3 py-1.5 text-sm border border-ink/5 shadow-sm">
-                <span className="text-muted text-xs">USDC </span>
-                <span className="font-bold font-mono text-ink">
-                  ${balance.toFixed(2)}
+              <div className="bg-card rounded-xl px-3 py-1.5 text-sm border border-amber/10">
+                <span className="text-muted text-[10px] font-mono">$ </span>
+                <span className="font-mono text-amber-light font-normal">
+                  {balance.toFixed(2)}
                 </span>
               </div>
             )}
@@ -672,25 +671,25 @@ export default function Home() {
           <div className="mt-2 flex items-center gap-2">
             <button
               onClick={copyAddress}
-              className="flex items-center gap-1.5 bg-ink/5 rounded-lg px-2.5 py-1.5 text-xs font-mono text-muted hover:bg-ink/10 transition-colors border border-ink/5"
+              className="flex items-center gap-1.5 bg-card rounded-lg px-2.5 py-1.5 text-xs font-mono text-muted hover:text-amber transition-colors border border-amber/10"
             >
               <span>{shortAddr(walletAddress)}</span>
               <span className="text-[10px]">{copied ? "Copied!" : "Copy"}</span>
             </button>
             <button
               onClick={() => { setShowWithdraw(true); setWithdrawResult(null); setWithdrawError(null); }}
-              className="bg-ink/5 rounded-lg px-2.5 py-1.5 text-[10px] font-semibold text-muted hover:bg-ink/10 transition-colors border border-ink/5"
+              className="bg-card rounded-lg px-2.5 py-1.5 text-[10px] font-medium text-muted hover:text-amber transition-colors border border-amber/10"
             >
               Withdraw
             </button>
             <button
               onClick={() => setShowExportKey(true)}
-              className="bg-ink/5 rounded-lg px-2.5 py-1.5 text-[10px] font-semibold text-muted hover:bg-ink/10 transition-colors border border-ink/5"
+              className="bg-card rounded-lg px-2.5 py-1.5 text-[10px] font-medium text-muted hover:text-amber transition-colors border border-amber/10"
             >
               Export Key
             </button>
             {balance !== null && balance < 1 && (
-              <span className="text-[11px] text-down font-medium">
+              <span className="text-[10px] text-rose font-medium">
                 Deposit USDC (Polygon) to trade
               </span>
             )}
@@ -708,30 +707,7 @@ export default function Home() {
         )}
       </div>
 
-      {/* Tab bar */}
-      <div className="px-4 mb-4">
-        <div className="flex bg-ink/5 rounded-xl p-1">
-          {(
-            [
-              { key: "markets", label: "Markets" },
-              { key: "portfolio", label: "My Bets" },
-              { key: "leaderboard", label: "Leaderboard" },
-            ] as const
-          ).map(({ key, label }) => (
-            <button
-              key={key}
-              onClick={() => { haptic("selection"); setTab(key); if (key === "portfolio") checkResolvedBets(); }}
-              className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${
-                tab === key
-                  ? "bg-card text-ink shadow-sm"
-                  : "text-muted"
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      </div>
+      {/* Top: no tab bar — bottom tabs instead */}
 
       {/* Refresh bar for markets */}
       {tab === "markets" && !loading && markets.length > 0 && (
@@ -829,12 +805,12 @@ export default function Home() {
             />
 
             {/* Powered by */}
-            <div className="text-center text-[11px] font-mono text-muted py-4">
+            <div className="text-center text-[10px] font-mono text-muted/50 py-6 tracking-wider uppercase">
               Powered by{" "}
-              <span className="text-edge font-bold">Synth</span> Monte Carlo
-              simulations (1,000 paths)
+              <span className="text-amber">Synth</span> Monte Carlo
+              &middot; Real USDC on Polymarket
               <br />
-              Real USDC trading on Polymarket
+              <span className="text-muted/30">deja.market</span>
             </div>
           </>
         )}
@@ -846,7 +822,7 @@ export default function Home() {
       {/* Export Private Key Modal */}
       {showExportKey && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-6">
-          <div className="bg-card rounded-2xl p-5 w-full max-w-sm space-y-4 shadow-xl animate-scale-in">
+          <div className="bg-card rounded-2xl p-5 w-full max-w-sm space-y-4 shadow-xl animate-scale-in border border-amber/10">
             <h2 className="text-lg font-bold text-ink">Export Private Key</h2>
 
             {!privateKey ? (
@@ -909,7 +885,7 @@ export default function Home() {
       {liveBets.length > 0 && !liveBetOpen && (
         <button
           onClick={() => setLiveBetOpen(true)}
-          className="fixed bottom-24 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 px-4 py-2.5 rounded-full shadow-lg border animate-fade-up bg-ink/90 border-white/20 text-white"
+          className="fixed bottom-28 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 px-4 py-2.5 rounded-full shadow-lg border animate-fade-up bg-card border-amber/20 text-ink"
         >
           <span className="w-2 h-2 rounded-full bg-up animate-pulse" />
           <span className="text-xs font-bold font-mono">
@@ -919,10 +895,48 @@ export default function Home() {
         </button>
       )}
 
+      {/* Bottom Tab Bar */}
+      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-md border-t border-amber/10">
+        <div className="flex items-center justify-around px-2 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+          {(
+            [
+              { key: "markets" as Tab, label: "Markets", icon: (
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+                </svg>
+              )},
+              { key: "portfolio" as Tab, label: "My Bets", icon: (
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z" />
+                </svg>
+              )},
+              { key: "leaderboard" as Tab, label: "Board", icon: (
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 01-.982-3.172M9.497 14.25a7.454 7.454 0 00.981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 007.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M18.75 4.236c.982.143 1.954.317 2.916.52A6.003 6.003 0 0016.27 9.728M18.75 4.236V4.5c0 2.108-.966 3.99-2.48 5.228m0 0a6.003 6.003 0 01-5.54 0" />
+                </svg>
+              )},
+            ]
+          ).map(({ key, label, icon }) => (
+            <button
+              key={key}
+              onClick={() => { haptic("selection"); setTab(key); if (key === "portfolio") checkResolvedBets(); }}
+              className={`flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-lg transition-all ${
+                tab === key
+                  ? "text-amber"
+                  : "text-muted/60"
+              }`}
+            >
+              {icon}
+              <span className="text-[10px] font-mono tracking-wider">{label}</span>
+            </button>
+          ))}
+        </div>
+      </nav>
+
       {/* Withdraw Modal */}
       {showWithdraw && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-6">
-          <div className="bg-card rounded-2xl p-5 w-full max-w-sm space-y-3 shadow-xl animate-scale-in">
+          <div className="bg-card rounded-2xl p-5 w-full max-w-sm space-y-3 shadow-xl animate-scale-in border border-amber/10">
             <h2 className="text-lg font-bold text-ink">Withdraw USDC</h2>
             <p className="text-xs text-muted">Send USDC from your Safe wallet to any Polygon address. Gasless via Polymarket relayer.</p>
 
