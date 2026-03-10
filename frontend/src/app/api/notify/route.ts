@@ -180,8 +180,8 @@ export async function GET(req: Request) {
     lines.join("\n\n") +
     `\n\n<i>Powered by Synth Monte Carlo · Real USDC on Polymarket</i>`;
 
-  // Dynamic banner
-  const bannerUrl = `${APP_URL}/api/og?title=${encodeURIComponent(
+  // Dynamic banner (type=edge for edge alerts)
+  const bannerUrl = `${APP_URL}/api/og?type=edge&title=${encodeURIComponent(
     `${signals.length} Edge Signal${signals.length > 1 ? "s" : ""}`
   )}&subtitle=${encodeURIComponent(
     signals.map((s) => `${s.asset} ${s.tradeDirection}`).join(" · ")

@@ -3,7 +3,18 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Déja. — Prediction Markets",
-  description: "AI-powered prediction markets. Where the future feels familiar.",
+  description: "AI-powered prediction market trading on Polymarket, inside Telegram. Synth finds the edge. You trade it.",
+  openGraph: {
+    title: "Déja. — You knew it all along.",
+    description: "AI-powered prediction market trading on Polymarket, inside Telegram. Built with Synthdata Predictive Intelligence API.",
+    siteName: "Déja.",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Déja. — You knew it all along.",
+    description: "AI-powered prediction market trading on Polymarket, inside Telegram.",
+  },
 };
 
 export const viewport: Viewport = {

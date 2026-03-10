@@ -1,232 +1,174 @@
-# EasyPoly
+# Deja.
 
-> AI-powered Polymarket analytics & copy trading platform
-> 
+> **You knew it all along.**
+>
+> AI-powered prediction market trading on Polymarket, inside Telegram.
+>
 > **Synthdata Predictive Intelligence Hackathon 2026**
 
-## 🎯 What is EasyPoly?
-
-EasyPoly democratizes access to Polymarket alpha by combining **Synthdata's probabilistic forecasts** with algorithmic trader discovery and one-click copy trading.
-
-While most traders struggle to identify mispriced markets and winning strategies, EasyPoly does three things:
-
-1. **Find Alpha** — Uses Synthdata API to identify mispriced Polymarket markets
-2. **Discover Winners** — Algorithmic ranking of top-performing traders (multi-dimensional scoring)
-3. **Copy Trades** — One-click copy trading with position sizing and risk controls
-
-### The Problem
-
-- **Retail traders can't compete** with quants and whales on Polymarket
-- **Prediction markets are inefficient** — mispricing opportunities exist but are hard to spot
-- **Top traders are invisible** — no easy way to find and follow winning strategies
-
-### The Solution
-
-EasyPoly layers Synthdata intelligence on top of Polymarket to give retail traders institutional-grade tools:
-
-- **Synthdata-powered predictions** — Real-time probability forecasts vs. market odds
-- **Conviction scoring** — Multi-signal analysis (Synthdata + volume + trader behavior)
-- **Automated trader discovery** — Find hot traders before they're famous
-- **Copy trading interface** — Follow winners with one click
+**Live:** [@synthbet_bot on Telegram](https://t.me/synthbet_bot) | [Pitch Page](https://synthbet.vercel.app/pitch) | [GitHub](https://github.com/miyamoto-labs/synthbet)
 
 ---
 
-## 🏗️ Architecture
+## What is Deja.?
+
+Deja. is a Telegram Mini App that lets 900M+ Telegram users trade prediction markets with AI-powered edge detection. Synth's Monte Carlo simulations find mispriced Polymarket markets. You trade them with one tap. Real USDC.
+
+**How it works:**
+
+1. **Synth Simulates** — 1,000 Monte Carlo price paths predict BTC, ETH & SOL outcomes via the Synthdata Predictive Intelligence API
+2. **Edge Detected** — When Synth's probability diverges from Polymarket's implied odds by 15%+, that's a tradeable signal
+3. **You Trade** — One tap places a real USDC order on Polymarket's CLOB. Gasless via Gnosis Safe. Live tracking until resolution.
+
+---
+
+## Architecture
 
 ```
-easypoly/
-├── frontend/          # Next.js web app (TypeScript)
-├── engine/            # AI prediction & trader analysis (Python)
-├── bot/               # Trading automation (JavaScript)
-└── docs/              # Hackathon documentation
+synthbet/
+├── frontend/          # Next.js 15 Telegram Mini App (TypeScript)
+├── bot/               # Telegram bot (Node.js) — /start, /play commands
+├── docs/              # Hackathon documentation
+└── README.md
 ```
 
-### Tech Stack
-
-- **Frontend:** Next.js 15, React, TailwindCSS, shadcn/ui
-- **Backend:** Python (FastAPI), Node.js
-- **AI/ML:** Synthdata API, custom conviction scoring
-- **Blockchain:** Polymarket API, wallet integration
-- **Database:** PostgreSQL (planned), JSON storage (MVP)
-
----
-
-## 🚀 Features
-
-### Phase 1: Beta (Hackathon MVP)
-- ✅ Synthdata API integration
-- ✅ Market analysis dashboard
-- ✅ Top trader leaderboard (manual curation)
-- ✅ Basic copy trade UI
-- ⏳ Wallet connection (in progress)
-
-### Phase 2: Post-Hackathon
-- Real-time Synthdata predictions
-- Automated trader scanning (6-hour cycles)
-- Multi-metric trader ranking (ROI, win rate, recency, red flags)
-- Push notifications for alpha signals
-- Social features (trader profiles, comments)
-
-### Phase 3: Scale
-- Portfolio optimization
-- Risk management tools
-- Mobile app
-- Premium tiers
+| Layer | Technology | Details |
+|-------|-----------|---------|
+| Frontend | Next.js 15 on Vercel | Telegram Mini App with real-time data, haptic feedback, programmatic sound design |
+| Trading | Polymarket CLOB + Gamma API | Real USDC order placement with configurable slippage, gasless via relayer |
+| Wallets | Gnosis Safe (auto-provisioned) | Non-custodial per Telegram user, export private keys, deposit/withdraw in-app |
+| Charts | Hyperliquid WebSocket | Real-time candlestick charts, live price tracking during active bets |
+| Alerts | Cron + Telegram Bot API | Edge alerts every 15 min with dynamic OG images and deep-link URLs |
+| Database | Supabase (Postgres) | Users, bets, wallets, portfolio, leaderboard with RLS policies |
+| AI Chat | Claude API (Anthropic) | In-app AI assistant for market analysis questions |
 
 ---
 
-## 📊 How We Use Synthdata
+## Features
 
-**1. Market Analysis**
-- Query Synthdata API for BTC/ETH up/down probabilities
-- Compare Synthdata probability vs. Polymarket market odds
-- Flag markets where edge > 5% (mispricing opportunity)
+- **80+ live Polymarket markets** across Crypto, Politics, Sports, Entertainment, Tech, Culture
+- **AI edge detection** — Synth vs Market probability comparison with strength classification
+- **One-tap trading** from Telegram with native confirmation dialogs
+- **Live bet tracking** with real-time price feeds, sparklines, and countdown timers
+- **Kelly Criterion bet sizing** — optimal position sizes from Synth's probability output
+- **Category filtering** with horizontal pill navigation
+- **Social activity feed** showing all user trades in real-time
+- **Portfolio management** with P&L tracking and claim-to-USDC
+- **Leaderboard** with profit ranking and win rate stats
+- **Wallet management** — deposit, withdraw, export private key, all in-app
+- **Edge alert notifications** with deep-link to trade from your lock screen
+- **Sound design** via Web Audio API (bet placed, win, lose effects)
+- **Native haptic feedback** via Telegram WebApp SDK
+- **DRY_MODE toggle** — paper trading for testing, real USDC for production
 
-**2. Conviction Scoring**
-- Combine Synthdata predictions with volume, liquidity, trader sentiment
-- Weight signals (Synthdata = 40%, volume = 30%, trader behavior = 30%)
-- Generate conviction score (0-100) for each market
+---
 
-**3. Trader Evaluation**
-- Analyze trader performance on markets where Synthdata was accurate
-- Identify traders who consistently align with Synthdata signals
-- Rank traders by "Synthdata alpha correlation"
+## How We Use the Synthdata API
 
-**Example API Usage:**
-```python
-import requests
+Every trade signal originates from Synth's Monte Carlo simulations.
 
-response = requests.get(
-    "https://api.synthdata.co/insights/polymarket/up-down/hourly",
-    headers={"Authorization": f"Apikey {API_KEY}"},
-    params={"asset": "BTC"}
-)
+**API calls per refresh cycle:** 9 (3 assets x 3 timeframes)
 
-data = response.json()
-synth_prob = data['synth_probability_up']
-poly_prob = data['polymarket_probability_up']
-edge = synth_prob - poly_prob
-
-if abs(edge) > 0.05:
-    print(f"ALPHA: Synthdata={synth_prob:.1%}, Market={poly_prob:.1%}, Edge={edge:.1%}")
+```
+GET /insights/polymarket/up-down/15min?asset=BTC
+GET /insights/polymarket/up-down/hourly?asset=ETH
+GET /insights/polymarket/up-down/daily?asset=SOL
+Authorization: Apikey {SYNTH_API_KEY}
 ```
 
+**Edge detection:**
+```
+Edge = synth_probability_up - polymarket_probability_up
+If |Edge| >= 15% -> Signal detected -> Trade executed
+```
+
+**Signal classification:**
+- Strong: Edge >= 25%
+- Moderate: Edge 15-25%
+- Direction: positive = UP underpriced, negative = DOWN underpriced
+
+**Bet sizing:** Half-Kelly formula `f* = (bp - q) / 2b` capped at $5-$100.
+
 ---
 
-## 🎨 Screenshots
-
-*(Coming soon — screenshots of dashboard, trader leaderboard, copy trade UI)*
-
----
-
-## 🏃 Quick Start
+## Quick Start
 
 ### Prerequisites
 - Node.js 18+
-- Python 3.11+
 - Synthdata API key
-- Polymarket API access
+- Polymarket API access (for trading)
+- Supabase project (for database)
 
 ### Installation
 
 ```bash
 # Clone the repo
-git clone https://github.com/miyamoto-labs/easypoly.git
-cd easypoly
+git clone https://github.com/miyamoto-labs/synthbet.git
+cd synthbet
 
 # Install frontend
 cd frontend
 npm install
 cp .env.example .env.local
-# Add your Synthdata API key to .env.local
+# Add your API keys to .env.local
 npm run dev
-
-# Install engine (separate terminal)
-cd ../engine
-pip install -r requirements.txt
-cp .env.example .env
-# Add your Synthdata API key to .env
-python main.py
 ```
 
 Frontend: http://localhost:3000
-Engine API: http://localhost:8000
 
----
+### Environment Variables
 
-## 🧪 Testing
-
-```bash
-# Frontend tests
-cd frontend
-npm test
-
-# Engine tests
-cd engine
-pytest
+```
+SYNTH_API_KEY=             # Synthdata Predictive Intelligence API key
+NEXT_PUBLIC_SUPABASE_URL=  # Supabase project URL
+SUPABASE_SERVICE_KEY=      # Supabase service role key
+DRY_MODE=true              # Set to 'false' for real USDC trading
 ```
 
 ---
 
-## 📈 Roadmap
+## Roadmap
 
-**Q1 2026 (Hackathon)**
-- Beta launch with manual trader curation
-- Synthdata API integration
-- Basic copy trade interface
-
-**Q2 2026**
-- Automated trader discovery
-- Real-time notifications
-- Mobile-responsive design
-
-**Q3 2026**
-- Portfolio management
-- Risk controls
-- Premium features
-
-**Q4 2026**
-- Mobile app
-- Social features
-- Institutional tier
+| Phase | Features |
+|-------|----------|
+| **Q2 2026** | Smart timing engine (ML-optimized entry), referral system, multi-market aggregation (Kalshi, Azuro) |
+| **Q3 2026** | Portfolio analytics (win rate by asset, edge accuracy), weekly competitions with USDC prizes |
+| **Q4 2026** | Telegram inline mode (share bets in any chat), mobile app, institutional tier |
 
 ---
 
-## 🤝 Team
+## Team
 
-**Erik Austheim** — Founder, Developer
+**Erik Austheim** — Founder & Developer
+- 3+ years Polymarket trading experience
+- Built multiple profitable trading bots
 - Norway-based trader & builder
-- 3+ years Polymarket experience
-- Built multiple trading bots (SuperBTCBot, polymarket-trader)
+- GitHub: [miyamoto-labs](https://github.com/miyamoto-labs)
 
-**Miyamoto** — AI Co-Founder
-- Autonomous AI systems specialist
-- Built EasyPoly engine & automation
-- MIYAMOTO LABS
+**Miyamoto Labs** — AI Systems
 
 ---
 
-## 📜 License
+## Tech Stack
+
+| Technology | Role |
+|-----------|------|
+| Synthdata Predictive Intelligence API | Core — Monte Carlo simulations, edge detection |
+| Polymarket CLOB + Gamma API | Order execution + market data |
+| Gnosis Safe | Non-custodial wallets (gasless via relayer) |
+| Hyperliquid WebSocket | Real-time price charts |
+| Next.js 15 on Vercel | App framework + deployment |
+| Telegram Mini App SDK | Native mobile integration + haptics |
+| Supabase (Postgres) | Database + auth + real-time |
+| Claude API (Anthropic) | In-app AI chat assistant |
+| Web Audio API | Programmatic sound effects |
+
+---
+
+## License
 
 MIT
 
 ---
 
-## 🔗 Links
-
-- **Landing Page:** [easypoly.io](https://easypoly.io) *(coming soon)*
-- **Twitter:** [@easypoly_lol](https://twitter.com/easypoly_lol)
-- **Demo:** [app.easypoly.io](https://app.easypoly.io) *(coming soon)*
-
----
-
-## 🙏 Acknowledgments
-
-Built with:
-- **Synthdata** — Probabilistic forecasting API
-- **Polymarket** — Prediction market platform
-- **MIYAMOTO LABS** — Autonomous AI systems
-
----
-
-**Made for the Synthdata Predictive Intelligence Hackathon 2026**
+**Deja. — Built for the Synthdata Predictive Intelligence Hackathon 2026**
