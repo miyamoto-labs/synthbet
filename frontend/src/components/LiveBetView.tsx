@@ -480,32 +480,34 @@ export function LiveBetView({ bets, onClose, onCashOut, telegramId }: LiveBetVie
 
       {/* Bottom — shrink-0 ensures buttons are always visible */}
       <div className="px-6 pb-8 space-y-3 shrink-0">
-        {/* Cash Out button — only before market expires */}
-        {onCashOut && !activePriceInfo.expired && (
-          <button
-            onClick={async (e) => {
-              e.stopPropagation();
-              if (cashingOut) return;
-              setCashingOut(true);
-              try {
-                await onCashOut(activeBet, activePriceInfo.price);
-              } finally {
-                setCashingOut(false);
-              }
-            }}
-            disabled={cashingOut}
-            className={`w-full py-3.5 rounded-xl text-sm font-bold transition-all active:scale-[0.98] disabled:opacity-50 ${
-              activePriceInfo.pnl >= 0
+        {/* Cash Out button — always rendered, disabled when expired */}
+        <button
+          onClick={async (e) => {
+            e.stopPropagation();
+            if (cashingOut || activePriceInfo.expired || !onCashOut) return;
+            setCashingOut(true);
+            try {
+              await onCashOut(activeBet, activePriceInfo.price);
+            } finally {
+              setCashingOut(false);
+            }
+          }}
+          disabled={cashingOut || activePriceInfo.expired || !onCashOut}
+          className={`w-full py-3.5 rounded-xl text-sm font-bold transition-all active:scale-[0.98] disabled:opacity-50 ${
+            activePriceInfo.expired
+              ? "bg-ink/10 text-muted"
+              : activePriceInfo.pnl >= 0
                 ? "bg-up text-charcoal shadow-sm"
                 : "bg-down text-white shadow-sm"
-            }`}
-          >
-            {cashingOut
-              ? "Closing..."
-              : `Cash Out (${activePriceInfo.pnl >= 0 ? "+" : ""}$${activePriceInfo.pnl.toFixed(2)})`
-            }
-          </button>
-        )}
+          }`}
+        >
+          {cashingOut
+            ? "Closing..."
+            : activePriceInfo.expired
+              ? "Market Closed"
+              : `Cash Out (${activePriceInfo.pnl >= 0 ? "+" : ""}$${Math.abs(activePriceInfo.pnl).toFixed(2)})`
+          }
+        </button>
         <button
           onClick={(e) => { e.stopPropagation(); onClose(); }}
           className="w-full py-3 rounded-xl text-sm font-semibold text-ink/50 bg-ink/5 border border-amber/10 active:bg-ink/10 transition-colors"
