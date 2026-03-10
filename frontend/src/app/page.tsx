@@ -484,17 +484,26 @@ export default function Home() {
 
   async function handleCashOut(bet: LiveBet, currentPrice: number) {
     const user = getTelegramUser();
-    if (!user?.id || !bet.dbId) return;
+    if (!user?.id) return;
 
     try {
+      // Use dbId if available, otherwise fallback to asset/direction/timeframe lookup
+      const body: Record<string, any> = {
+        telegram_id: user.id,
+        current_price: currentPrice,
+      };
+      if (bet.dbId) {
+        body.bet_id = bet.dbId;
+      } else {
+        body.asset = bet.asset;
+        body.direction = bet.direction;
+        body.timeframe = bet.timeframe;
+      }
+
       const res = await fetch("/api/bet/close", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          telegram_id: user.id,
-          bet_id: bet.dbId,
-          current_price: currentPrice,
-        }),
+        body: JSON.stringify(body),
       });
 
       const data = await res.json();

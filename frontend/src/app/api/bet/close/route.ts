@@ -10,14 +10,23 @@ const DRY_MODE = process.env.DRY_MODE?.trim() === 'true';
  * POST /api/bet/close
  * Close a single pending bet early (cash out).
  * Body: { telegram_id, bet_id, current_price }
+ * OR:   { telegram_id, asset, direction, timeframe, current_price } (fallback lookup)
  */
 export async function POST(req: NextRequest) {
   try {
-    const { telegram_id, bet_id, current_price } = await req.json();
+    const { telegram_id, bet_id, current_price, asset, direction, timeframe } = await req.json();
 
-    if (!telegram_id || !bet_id || typeof current_price !== 'number') {
+    if (!telegram_id || typeof current_price !== 'number') {
       return NextResponse.json(
-        { error: 'Missing telegram_id, bet_id, or current_price' },
+        { error: 'Missing telegram_id or current_price' },
+        { status: 400 }
+      );
+    }
+
+    // Need either bet_id or asset+direction+timeframe for lookup
+    if (!bet_id && !(asset && direction && timeframe)) {
+      return NextResponse.json(
+        { error: 'Provide bet_id or asset+direction+timeframe' },
         { status: 400 }
       );
     }
@@ -35,14 +44,26 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Look up the bet — must belong to this user and be pending
-    const { data: bet, error: betErr } = await supabase
+    // Look up the bet — by ID if available, otherwise by asset/direction/timeframe
+    let betQuery = supabase
       .from('synth_bets')
       .select('*')
-      .eq('id', bet_id)
       .eq('user_id', user.id)
-      .eq('result', 'pending')
-      .single();
+      .eq('result', 'pending');
+
+    if (bet_id) {
+      betQuery = betQuery.eq('id', bet_id);
+    } else {
+      betQuery = betQuery
+        .eq('asset', asset)
+        .eq('direction', direction)
+        .eq('timeframe', timeframe)
+        .order('created_at', { ascending: false })
+        .limit(1);
+    }
+
+    const { data: betRows, error: betErr } = await betQuery;
+    const bet = betRows?.[0];
 
     if (betErr || !bet) {
       return NextResponse.json(

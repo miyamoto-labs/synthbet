@@ -481,7 +481,7 @@ export function LiveBetView({ bets, onClose, onCashOut, telegramId }: LiveBetVie
       {/* Bottom */}
       <div className="px-6 pb-8 space-y-3">
         {/* Cash Out button — only before market expires */}
-        {onCashOut && activeBet.dbId && !activePriceInfo.expired && (
+        {onCashOut && !activePriceInfo.expired && (
           <button
             onClick={async (e) => {
               e.stopPropagation();
