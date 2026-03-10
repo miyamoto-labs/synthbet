@@ -255,7 +255,7 @@ function SingleBetView({ bet, telegramId, onStatusChange, onPriceUpdate }: {
   const tfLabel = bet.timeframe === "15m" ? "15 Min" : bet.timeframe === "1h" ? "1 Hour" : "Daily";
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center px-6 relative">
+    <div className="flex-1 min-h-0 flex flex-col items-center justify-center px-6 relative overflow-y-auto">
       {/* Screen flash overlay */}
       {flash && (
         <div className={`absolute inset-0 pointer-events-none ${
@@ -297,7 +297,7 @@ function SingleBetView({ bet, telegramId, onStatusChange, onPriceUpdate }: {
       </div>
 
       {/* Price change */}
-      <div className={`text-lg font-bold font-mono mb-6 ${
+      <div className={`text-lg font-bold font-mono mb-4 ${
         isWinning ? "text-up" : priceDiff === 0 ? "text-muted" : "text-down"
       }`}>
         {priceDiff >= 0 ? "+" : ""}{pricePct.toFixed(3)}%
@@ -307,13 +307,13 @@ function SingleBetView({ bet, telegramId, onStatusChange, onPriceUpdate }: {
       </div>
 
       {/* Sparkline */}
-      <div className="w-full max-w-xs mb-8">
+      <div className="w-full max-w-xs mb-4">
         <Sparkline priceHistory={priceHistory} entryPrice={bet.entryPrice} isWinning={isWinning} />
       </div>
 
       {/* Countdown */}
       {(remaining || !bet.endTime) && (
-        <div className="text-center mb-6">
+        <div className="text-center mb-4">
           <div className="text-muted text-[10px] font-mono uppercase tracking-widest mb-1">
             {expired ? "Waiting for Result" : "Time Remaining"}
           </div>
@@ -478,8 +478,8 @@ export function LiveBetView({ bets, onClose, onCashOut, telegramId }: LiveBetVie
 
       <Confetti active={showConfetti} />
 
-      {/* Bottom */}
-      <div className="px-6 pb-8 space-y-3">
+      {/* Bottom — shrink-0 ensures buttons are always visible */}
+      <div className="px-6 pb-8 space-y-3 shrink-0">
         {/* Cash Out button — only before market expires */}
         {onCashOut && !activePriceInfo.expired && (
           <button
