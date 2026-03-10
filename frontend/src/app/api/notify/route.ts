@@ -30,7 +30,11 @@ async function fetchInsight(asset: string, timeframe: string): Promise<Insight |
       }
     );
     if (!res.ok) return null;
-    return res.json();
+    const data = await res.json();
+    if (data && typeof data.message === "string") {
+      try { return JSON.parse(data.message); } catch { return null; }
+    }
+    return data;
   } catch {
     return null;
   }
@@ -158,6 +162,24 @@ export async function GET(req: Request) {
       }
     })
   );
+
+  // Test mode: send a fake signal to verify Telegram works
+  const isTest = new URL(req.url).searchParams.get("test") === "true";
+  if (isTest) {
+    signals.push({
+      asset: "BTC",
+      timeframe: "15m",
+      absEdge: 22,
+      tradeDirection: "UP",
+      synthPct: 68,
+      polyPct: 46,
+      price: "$104,250",
+      strength: "Moderate",
+      slug: "test",
+      entryPrice: 104250,
+      window: "14:00–14:15 UTC",
+    });
+  }
 
   if (signals.length === 0) {
     return NextResponse.json({ sent: false, reason: "No edges above 15% threshold" });

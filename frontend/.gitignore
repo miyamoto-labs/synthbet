@@ -2,3 +2,4 @@
 .env*
 tsconfig.tsbuildinfo
 CLAUDE.md
+.env*.local

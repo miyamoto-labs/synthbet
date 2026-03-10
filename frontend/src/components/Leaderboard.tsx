@@ -14,8 +14,15 @@ type LeaderboardEntry = {
 export function Leaderboard() {
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentUsername, setCurrentUsername] = useState<string | null>(null);
 
   useEffect(() => {
+    try {
+      const tg = (window as any).Telegram?.WebApp;
+      const user = tg?.initDataUnsafe?.user;
+      if (user?.username) setCurrentUsername(user.username);
+    } catch {}
+
     fetch("/api/leaderboard?limit=20")
       .then((r) => r.json())
       .then((data) => {
@@ -51,11 +58,13 @@ export function Leaderboard() {
 
   return (
     <div className="space-y-2">
-      {entries.map((entry) => (
+      {entries.map((entry) => {
+        const isMe = currentUsername && entry.username === currentUsername;
+        return (
         <div
           key={entry.rank}
           className={`bg-card rounded-xl p-3 flex items-center gap-3 shadow-sm border ${
-            entry.rank <= 3 ? "border-gold/30" : "border-ink/5"
+            isMe ? "border-amber/40 bg-amber/5" : entry.rank <= 3 ? "border-gold/30" : "border-ink/5"
           }`}
         >
           <div className="w-8 text-center text-lg font-bold font-mono text-ink">
@@ -85,7 +94,8 @@ export function Leaderboard() {
             </div>
           </div>
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

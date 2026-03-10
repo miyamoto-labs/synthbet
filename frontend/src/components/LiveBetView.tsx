@@ -471,7 +471,7 @@ export function LiveBetView({ bets, onClose, telegramId }: LiveBetViewProps) {
           Minimize
         </button>
         <p className="text-muted/60 text-[10px] font-mono text-center">
-          Live price from Binance · Final result from Polymarket
+          Live price from Hyperliquid · Final result from Polymarket
         </p>
       </div>
     </div>

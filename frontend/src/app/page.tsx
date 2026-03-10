@@ -209,7 +209,11 @@ export default function Home() {
   const { markets: featuredMarkets, loading: featuredLoading, categories: featuredCategories } = useFeaturedMarkets();
   const [resultToast, setResultToast] = useState<{ type: "won" | "lost"; text: string } | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
-  const knownResolvedIds = useRef(new Set<number>());
+  const knownResolvedIds = useRef(new Set<number>(
+    typeof window !== "undefined"
+      ? JSON.parse(localStorage.getItem("deja_resolved_ids") || "[]")
+      : []
+  ));
 
   const getTelegramUser = useCallback(() => {
     try {
@@ -377,6 +381,8 @@ export default function Home() {
       for (const bet of bets) {
         if (knownResolvedIds.current.has(bet.id)) continue;
         knownResolvedIds.current.add(bet.id);
+        // Persist so we don't replay on next app open
+        try { localStorage.setItem("deja_resolved_ids", JSON.stringify([...knownResolvedIds.current])); } catch {}
         const won = bet.result === "won";
         const pnl = Math.abs(bet.pnl || bet.amount);
         const text = won
@@ -647,7 +653,7 @@ export default function Home() {
       )}
 
       {/* Header */}
-      <div className="px-4 pt-5 pb-3">
+      <div className="px-4 pt-[max(1.25rem,env(safe-area-inset-top))] pb-3">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="font-serif text-2xl tracking-tight text-ink">
@@ -683,25 +689,10 @@ export default function Home() {
 
       {/* Top: no tab bar — bottom tabs instead */}
 
-      {/* Refresh bar for markets */}
-      {tab === "markets" && !loading && markets.length > 0 && (
-        <div className="px-4 mb-3 flex justify-end">
-          <button
-            onClick={refreshMarkets}
-            disabled={refreshing}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-ink/5 hover:bg-ink/10 rounded-lg text-xs font-semibold text-muted transition-colors border border-ink/5 disabled:opacity-50"
-          >
-            <svg
-              className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`}
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2.5}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h5M20 20v-5h-5M4 9a8 8 0 0113.29-3.29L20 9M20 15a8 8 0 01-13.29 3.29L4 15" />
-            </svg>
-            {refreshing ? "Refreshing..." : "Refresh"}
-          </button>
+      {/* Refresh indicator */}
+      {tab === "markets" && refreshing && (
+        <div className="px-4 mb-2">
+          <div className="text-center text-[10px] font-mono text-amber animate-pulse">Refreshing...</div>
         </div>
       )}
 
@@ -961,12 +952,15 @@ export default function Home() {
             <button
               key={key}
               onClick={() => { haptic("selection"); setTab(key); if (key === "portfolio") checkResolvedBets(); }}
-              className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg transition-all ${
+              className={`relative flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg transition-all ${
                 tab === key
                   ? "text-amber"
                   : "text-muted/60"
               }`}
             >
+              {tab === key && (
+                <span className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-0.5 rounded-full bg-amber" />
+              )}
               {icon}
               <span className="text-[10px] font-mono tracking-wider">{label}</span>
             </button>
@@ -989,16 +983,26 @@ export default function Home() {
               disabled={withdrawLoading}
               className="w-full py-2.5 px-3 bg-ink/5 text-ink rounded-xl text-sm font-mono border border-ink/8 placeholder:text-muted/50 disabled:opacity-50 outline-none focus:ring-2 focus:ring-ink/20"
             />
-            <input
-              type="number"
-              inputMode="decimal"
-              placeholder="Amount (USDC)"
-              min={1}
-              value={withdrawAmt}
-              onChange={(e) => setWithdrawAmt(e.target.value)}
-              disabled={withdrawLoading}
-              className="w-full py-2.5 px-3 bg-ink/5 text-ink rounded-xl text-sm font-mono border border-ink/8 placeholder:text-muted/50 disabled:opacity-50 outline-none focus:ring-2 focus:ring-ink/20"
-            />
+            <div className="relative">
+              <input
+                type="number"
+                inputMode="decimal"
+                placeholder="Amount (USDC)"
+                min={1}
+                value={withdrawAmt}
+                onChange={(e) => setWithdrawAmt(e.target.value)}
+                disabled={withdrawLoading}
+                className="w-full py-2.5 px-3 pr-14 bg-ink/5 text-ink rounded-xl text-sm font-mono border border-ink/8 placeholder:text-muted/50 disabled:opacity-50 outline-none focus:ring-2 focus:ring-ink/20"
+              />
+              {balance !== null && balance > 0 && (
+                <button
+                  onClick={() => setWithdrawAmt(balance.toFixed(2))}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-amber px-2 py-1 rounded-md active:bg-amber/10"
+                >
+                  MAX
+                </button>
+              )}
+            </div>
 
             {withdrawError && (
               <p className="text-xs text-down font-medium">{withdrawError}</p>

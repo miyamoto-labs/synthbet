@@ -232,29 +232,39 @@ export function MarketCard({ asset, min15, hourly, daily, onBetPlaced, onMarketE
         label={`${asset} ${tfLabel} Prediction`}
       />
 
-      {/* Model comparison */}
-      <div className="flex items-center justify-center gap-2 text-xs flex-wrap">
-        <span className="text-muted">Synth:</span>
-        <span className={`font-bold font-mono px-2 py-0.5 rounded-full ${
-          insight.synth_outcome === "Up" ? "bg-up/10 text-up-dark" : "bg-down/10 text-down"
-        }`}>
-          {insight.synth_outcome.toUpperCase()} {formatProb(
-            insight.synth_outcome === "Up" ? insight.synth_probability_up : 1 - insight.synth_probability_up
-          )}
-        </span>
-        {recommendedDirection ? (
-          <>
-            <span className="text-muted">→ Bet</span>
-            <span className={`font-bold font-mono px-2 py-0.5 rounded-full ${
-              recommendedDirection === "UP" ? "bg-up/15 text-up-dark" : "bg-down/15 text-down"
-            }`}>
-              {recommendedDirection}
-            </span>
-          </>
-        ) : (
-          <span className="text-muted">→ Skip (no edge)</span>
-        )}
+      {/* Market prices — what you're actually buying */}
+      <div className="grid grid-cols-2 gap-2">
+        <div className="bg-up/8 border border-up/15 rounded-xl px-3 py-2 text-center">
+          <div className="text-[10px] text-up-dark font-semibold uppercase tracking-wider">Up</div>
+          <div className="text-lg font-bold font-mono text-up-dark">
+            {Math.round(insight.polymarket_probability_up * 100)}¢
+          </div>
+          <div className="text-[10px] text-muted font-mono">
+            Synth: {Math.round(insight.synth_probability_up * 100)}¢
+          </div>
+        </div>
+        <div className="bg-down/8 border border-down/15 rounded-xl px-3 py-2 text-center">
+          <div className="text-[10px] text-down font-semibold uppercase tracking-wider">Down</div>
+          <div className="text-lg font-bold font-mono text-down">
+            {Math.round((1 - insight.polymarket_probability_up) * 100)}¢
+          </div>
+          <div className="text-[10px] text-muted font-mono">
+            Synth: {Math.round((1 - insight.synth_probability_up) * 100)}¢
+          </div>
+        </div>
       </div>
+
+      {/* Edge indicator */}
+      {recommendedDirection && (
+        <div className="flex items-center justify-center gap-2 text-xs">
+          <span className="text-muted">Edge:</span>
+          <span className={`font-bold font-mono px-2 py-0.5 rounded-full ${
+            recommendedDirection === "UP" ? "bg-up/15 text-up-dark" : "bg-down/15 text-down"
+          }`}>
+            {recommendedDirection} is underpriced by {absEdge.toFixed(0)}¢
+          </span>
+        </div>
+      )}
 
       {/* Success toast */}
       {showSuccess && (

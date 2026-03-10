@@ -22,7 +22,16 @@ async function fetchSynthInsight(asset: string, timeframe: "15min" | "hourly" | 
       return null;
     }
 
-    return res.json();
+    const data = await res.json();
+    // Synth API wraps the insight in a { message: "<json>" } envelope
+    if (data && typeof data.message === "string") {
+      try {
+        return JSON.parse(data.message);
+      } catch {
+        return null;
+      }
+    }
+    return data;
   } catch (err) {
     console.error(`Synth API fetch error for ${asset}/${timeframe}:`, err);
     return null;
