@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import type { MarketData } from "@/lib/synth";
 
 type Bet = {
   id: number;
@@ -16,11 +17,18 @@ type Bet = {
   created_at: string;
 };
 
-export function Portfolio({ refreshKey }: { refreshKey?: number }) {
+type PortfolioProps = {
+  refreshKey?: number;
+  markets?: MarketData[];
+  onSell?: (betId: number, currentPrice: number) => Promise<{ pnl: number } | null>;
+};
+
+export function Portfolio({ refreshKey, markets, onSell }: PortfolioProps) {
   const [bets, setBets] = useState<Bet[]>([]);
   const [loading, setLoading] = useState(true);
   const [redeeming, setRedeeming] = useState(false);
   const [redeemResult, setRedeemResult] = useState<string | null>(null);
+  const [sellingId, setSellingId] = useState<number | null>(null);
 
   const fetchBets = useCallback(async () => {
     try {
@@ -51,6 +59,50 @@ export function Portfolio({ refreshKey }: { refreshKey?: number }) {
       fetchBets();
     }
   }, [refreshKey, fetchBets]);
+
+  // Get current price for a bet from markets data
+  function getCurrentPrice(bet: Bet): number | null {
+    if (!markets) return null;
+    const market = markets.find((m) => m.asset === bet.asset);
+    if (!market) return null;
+    const tfKey = bet.timeframe === "15m" ? "15min" : bet.timeframe === "1h" ? "hourly" : "daily";
+    const insight = market[tfKey as keyof typeof market];
+    if (!insight || typeof insight === "string") return null;
+    return (insight as any).current_price ?? null;
+  }
+
+  // Calculate estimated P&L for a pending bet
+  function getEstimatedPnl(bet: Bet): { pnl: number; currentPrice: number } | null {
+    const currentPrice = getCurrentPrice(bet);
+    if (currentPrice === null || bet.entry_price === 0) return null;
+
+    let pnl: number;
+    if (bet.direction === "UP") {
+      pnl = bet.amount * ((currentPrice - bet.entry_price) / bet.entry_price);
+    } else {
+      pnl = bet.amount * ((bet.entry_price - currentPrice) / bet.entry_price);
+    }
+    // Cap loss at wagered amount
+    pnl = Math.max(pnl, -bet.amount);
+    return { pnl, currentPrice };
+  }
+
+  async function handleSell(bet: Bet) {
+    if (!onSell || sellingId) return;
+    const estimate = getEstimatedPnl(bet);
+    if (!estimate) return;
+
+    setSellingId(bet.id);
+    try {
+      const result = await onSell(bet.id, estimate.currentPrice);
+      if (result) {
+        // Re-fetch to show updated status
+        await fetchBets();
+      }
+    } finally {
+      setSellingId(null);
+    }
+  }
 
   if (loading) {
     return (
@@ -178,77 +230,121 @@ export function Portfolio({ refreshKey }: { refreshKey?: number }) {
       {pendingCount > 0 && (
         <div className="bg-ink/5 rounded-xl px-3 py-2 text-center border border-ink/8">
           <span className="text-xs text-muted font-medium">
-            {pendingCount} bet{pendingCount > 1 ? "s" : ""} awaiting market resolution
+            {pendingCount} active position{pendingCount > 1 ? "s" : ""}
           </span>
         </div>
       )}
 
       {/* Bet list */}
-      {bets.map((bet) => (
-        <div
-          key={bet.id}
-          className="bg-card rounded-xl p-3 shadow-sm border border-amber/10"
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-bold text-ink">{bet.asset}</span>
-              <span
-                className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
-                  bet.direction === "UP"
-                    ? "bg-up/20 text-up-dark"
-                    : "bg-down/20 text-down"
-                }`}
-              >
-                {bet.direction}
-              </span>
-              <span className="text-[10px] text-muted font-mono">
-                {tfLabel(bet.timeframe)}
-              </span>
-            </div>
-            <div className="text-right">
-              <div className="flex items-center justify-end gap-1">
-                {bet.order_id?.startsWith("dry-") && (
-                  <span className="text-[8px] font-bold px-1 py-0.5 rounded bg-ink/10 text-muted/60 uppercase">
-                    Paper
-                  </span>
-                )}
-                <span className="text-sm font-bold font-mono text-ink">
-                  ${bet.amount}
-                </span>
-              </div>
-            </div>
-          </div>
-          <div className="flex items-center justify-between mt-1.5">
-            <div className="flex items-center gap-2">
-              <span
-                className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
-                  bet.result === "won"
-                    ? "bg-up/15 text-up-dark"
-                    : bet.result === "lost"
-                    ? "bg-down/15 text-down"
-                    : bet.result === "cancelled"
-                    ? "bg-ink/5 text-muted/60"
-                    : "bg-ink/8 text-muted"
-                }`}
-              >
-                {bet.result === "pending" ? "Awaiting result" : bet.result === "cancelled" ? "Cancelled" : bet.result.toUpperCase()}
-              </span>
-              {bet.pnl !== 0 && (
+      {bets.map((bet) => {
+        const isPending = bet.result === "pending";
+        const estimate = isPending ? getEstimatedPnl(bet) : null;
+        const isSelling = sellingId === bet.id;
+
+        return (
+          <div
+            key={bet.id}
+            className={`bg-card rounded-xl p-3 shadow-sm border ${
+              isPending ? "border-amber/20" : "border-amber/10"
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-bold text-ink">{bet.asset}</span>
                 <span
-                  className={`text-[11px] font-bold font-mono ${
-                    bet.pnl > 0 ? "text-up-dark" : "text-down"
+                  className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                    bet.direction === "UP"
+                      ? "bg-up/20 text-up-dark"
+                      : "bg-down/20 text-down"
                   }`}
                 >
-                  {bet.pnl > 0 ? "+" : ""}${bet.pnl.toFixed(2)}
+                  {bet.direction}
                 </span>
-              )}
+                <span className="text-[10px] text-muted font-mono">
+                  {tfLabel(bet.timeframe)}
+                </span>
+              </div>
+              <div className="text-right">
+                <div className="flex items-center justify-end gap-1">
+                  {bet.order_id?.startsWith("dry-") && (
+                    <span className="text-[8px] font-bold px-1 py-0.5 rounded bg-ink/10 text-muted/60 uppercase">
+                      Paper
+                    </span>
+                  )}
+                  <span className="text-sm font-bold font-mono text-ink">
+                    ${bet.amount}
+                  </span>
+                </div>
+              </div>
             </div>
-            <span className="text-[10px] text-muted">
-              {timeAgo(bet.created_at)}
-            </span>
+            <div className="flex items-center justify-between mt-1.5">
+              <div className="flex items-center gap-2">
+                <span
+                  className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
+                    bet.result === "won"
+                      ? "bg-up/15 text-up-dark"
+                      : bet.result === "lost"
+                      ? "bg-down/15 text-down"
+                      : bet.result === "cancelled" || bet.result === "closed"
+                      ? "bg-ink/5 text-muted/60"
+                      : "bg-ink/8 text-muted"
+                  }`}
+                >
+                  {bet.result === "pending"
+                    ? "Active"
+                    : bet.result === "cancelled"
+                    ? "Cancelled"
+                    : bet.result === "closed"
+                    ? "Sold"
+                    : bet.result.toUpperCase()}
+                </span>
+                {/* Show live P&L for pending bets, stored P&L for resolved */}
+                {isPending && estimate ? (
+                  <span
+                    className={`text-[11px] font-bold font-mono ${
+                      estimate.pnl >= 0 ? "text-up-dark" : "text-down"
+                    }`}
+                  >
+                    {estimate.pnl >= 0 ? "+" : ""}${estimate.pnl.toFixed(2)}
+                  </span>
+                ) : bet.pnl !== 0 ? (
+                  <span
+                    className={`text-[11px] font-bold font-mono ${
+                      bet.pnl > 0 ? "text-up-dark" : "text-down"
+                    }`}
+                  >
+                    {bet.pnl > 0 ? "+" : ""}${bet.pnl.toFixed(2)}
+                  </span>
+                ) : null}
+              </div>
+              <span className="text-[10px] text-muted">
+                {timeAgo(bet.created_at)}
+              </span>
+            </div>
+
+            {/* Sell button for pending bets */}
+            {isPending && onSell && (
+              <button
+                onClick={() => handleSell(bet)}
+                disabled={isSelling || !estimate}
+                className={`w-full mt-2.5 py-2.5 rounded-xl text-xs font-bold transition-all active:scale-[0.98] disabled:opacity-50 ${
+                  !estimate
+                    ? "bg-ink/10 text-muted"
+                    : estimate.pnl >= 0
+                    ? "bg-up/15 text-up-dark border border-up/20"
+                    : "bg-down/15 text-down border border-down/20"
+                }`}
+              >
+                {isSelling
+                  ? "Selling..."
+                  : !estimate
+                  ? "Price unavailable"
+                  : `Sell (${estimate.pnl >= 0 ? "+" : ""}$${Math.abs(estimate.pnl).toFixed(2)})`}
+              </button>
+            )}
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
