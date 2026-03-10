@@ -20,7 +20,8 @@ export async function GET() {
         result,
         pnl,
         created_at,
-        user_id
+        user_id,
+        order_id
       `)
       .order("created_at", { ascending: false })
       .limit(50);
@@ -54,6 +55,7 @@ export async function GET() {
       result: b.result,
       pnl: b.pnl,
       createdAt: b.created_at,
+      isPaper: typeof b.order_id === "string" && b.order_id.startsWith("dry-"),
     }));
 
     return NextResponse.json(

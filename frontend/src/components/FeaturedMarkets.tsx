@@ -35,6 +35,7 @@ type Props = {
     timeframe: string;
     entryPrice?: number;
     endTime?: string;
+    dbId?: number;
   }) => void;
 };
 
@@ -239,6 +240,7 @@ function MarketBetCard({
         timeframe: "event",
         entryPrice: betPrice,
         endTime: market.endDate,
+        dbId: data.bet?.id,
       });
     } catch (err: any) {
       setError(err.message || "Bet failed");

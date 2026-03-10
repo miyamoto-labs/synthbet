@@ -15,6 +15,7 @@ import {
 
 export type LiveBet = {
   id: string; // unique key per bet
+  dbId?: number; // database row id for API calls
   asset: string;
   direction: "UP" | "DOWN";
   amount: number;
@@ -26,6 +27,7 @@ export type LiveBet = {
 type LiveBetViewProps = {
   bets: LiveBet[];
   onClose: () => void;
+  onCashOut?: (bet: LiveBet, currentPrice: number) => void;
   telegramId?: number;
 };
 
@@ -176,10 +178,11 @@ function Sparkline({
   );
 }
 
-function SingleBetView({ bet, telegramId, onStatusChange }: {
+function SingleBetView({ bet, telegramId, onStatusChange, onPriceUpdate }: {
   bet: LiveBet;
   telegramId?: number;
   onStatusChange?: (winning: boolean, expired: boolean) => void;
+  onPriceUpdate?: (price: number, pnl: number, expired: boolean) => void;
 }) {
   const { currentPrice, connected, priceHistory } = useLivePrice(bet.asset, bet.entryPrice);
   const { remaining, expired } = useCountdown(bet.endTime);
@@ -219,15 +222,23 @@ function SingleBetView({ bet, telegramId, onStatusChange }: {
     }
   }, [isWinning]);
 
+  // Estimated P&L for cash out
+  const estimatedPnl = bet.entryPrice > 0
+    ? bet.direction === "UP"
+      ? bet.amount * ((currentPrice - bet.entryPrice) / bet.entryPrice)
+      : bet.amount * ((bet.entryPrice - currentPrice) / bet.entryPrice)
+    : 0;
+
   // Notify parent of status (for confetti) + show big result
   useEffect(() => {
     onStatusChange?.(isWinning, expired);
+    onPriceUpdate?.(currentPrice, estimatedPnl, expired);
     if (expired && !resultShownRef.current) {
       resultShownRef.current = true;
       setShowResult(true);
       setTimeout(() => setShowResult(false), 3000);
     }
-  }, [isWinning, expired, onStatusChange]);
+  }, [isWinning, expired, onStatusChange, currentPrice, estimatedPnl, onPriceUpdate]);
 
   // Countdown sound effects
   useEffect(() => {
@@ -335,10 +346,12 @@ function SingleBetView({ bet, telegramId, onStatusChange }: {
   );
 }
 
-export function LiveBetView({ bets, onClose, telegramId }: LiveBetViewProps) {
+export function LiveBetView({ bets, onClose, onCashOut, telegramId }: LiveBetViewProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [showConfetti, setShowConfetti] = useState(false);
   const confettiPlayedRef = useRef(false);
+  const [activePriceInfo, setActivePriceInfo] = useState<{ price: number; pnl: number; expired: boolean }>({ price: 0, pnl: 0, expired: false });
+  const [cashingOut, setCashingOut] = useState(false);
 
   // Telegram native: BackButton, dark header, disable swipes
   useEffect(() => {
@@ -458,12 +471,41 @@ export function LiveBetView({ bets, onClose, telegramId }: LiveBetViewProps) {
             haptic("error");
           }
         }}
+        onPriceUpdate={(price, pnl, isExpired) => {
+          setActivePriceInfo({ price, pnl, expired: isExpired });
+        }}
       />
 
       <Confetti active={showConfetti} />
 
       {/* Bottom */}
       <div className="px-6 pb-8 space-y-3">
+        {/* Cash Out button — only before market expires */}
+        {onCashOut && activeBet.dbId && !activePriceInfo.expired && (
+          <button
+            onClick={async (e) => {
+              e.stopPropagation();
+              if (cashingOut) return;
+              setCashingOut(true);
+              try {
+                await onCashOut(activeBet, activePriceInfo.price);
+              } finally {
+                setCashingOut(false);
+              }
+            }}
+            disabled={cashingOut}
+            className={`w-full py-3.5 rounded-xl text-sm font-bold transition-all active:scale-[0.98] disabled:opacity-50 ${
+              activePriceInfo.pnl >= 0
+                ? "bg-up text-charcoal shadow-sm"
+                : "bg-down text-white shadow-sm"
+            }`}
+          >
+            {cashingOut
+              ? "Closing..."
+              : `Cash Out (${activePriceInfo.pnl >= 0 ? "+" : ""}$${activePriceInfo.pnl.toFixed(2)})`
+            }
+          </button>
+        )}
         <button
           onClick={(e) => { e.stopPropagation(); onClose(); }}
           className="w-full py-3 rounded-xl text-sm font-semibold text-ink/50 bg-ink/5 border border-amber/10 active:bg-ink/10 transition-colors"

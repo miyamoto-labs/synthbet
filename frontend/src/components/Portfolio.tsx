@@ -16,7 +16,7 @@ type Bet = {
   created_at: string;
 };
 
-export function Portfolio() {
+export function Portfolio({ refreshKey }: { refreshKey?: number }) {
   const [bets, setBets] = useState<Bet[]>([]);
   const [loading, setLoading] = useState(true);
   const [redeeming, setRedeeming] = useState(false);
@@ -31,7 +31,7 @@ export function Portfolio() {
       // Trigger resolve+redeem for any pending bets, then fetch
       await fetch(`/api/resolve-mine?telegram_id=${user.id}`).catch(() => {});
 
-      const res = await fetch(`/api/portfolio?telegram_id=${user.id}`);
+      const res = await fetch(`/api/portfolio?telegram_id=${user.id}&t=${Date.now()}`);
       const data = await res.json();
       setBets(data.bets || []);
     } catch (err) {
@@ -44,6 +44,13 @@ export function Portfolio() {
   useEffect(() => {
     fetchBets();
   }, [fetchBets]);
+
+  // Re-fetch when tab switches to portfolio
+  useEffect(() => {
+    if (refreshKey !== undefined && refreshKey > 0) {
+      fetchBets();
+    }
+  }, [refreshKey, fetchBets]);
 
   if (loading) {
     return (
@@ -199,9 +206,16 @@ export function Portfolio() {
               </span>
             </div>
             <div className="text-right">
-              <span className="text-sm font-bold font-mono text-ink">
-                ${bet.amount}
-              </span>
+              <div className="flex items-center justify-end gap-1">
+                {bet.order_id?.startsWith("dry-") && (
+                  <span className="text-[8px] font-bold px-1 py-0.5 rounded bg-ink/10 text-muted/60 uppercase">
+                    Paper
+                  </span>
+                )}
+                <span className="text-sm font-bold font-mono text-ink">
+                  ${bet.amount}
+                </span>
+              </div>
             </div>
           </div>
           <div className="flex items-center justify-between mt-1.5">

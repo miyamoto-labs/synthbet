@@ -242,8 +242,10 @@ export async function POST(req: NextRequest) {
       .select()
       .single();
 
+    let betLogged = true;
     if (betErr) {
-      console.error('[Bet] Failed to log trade:', betErr);
+      console.error('[Bet] Failed to log trade:', betErr.message, betErr.details, betErr.hint);
+      betLogged = false;
       // Order was placed successfully, just logging failed — don't fail the request
     }
 
@@ -265,6 +267,7 @@ export async function POST(req: NextRequest) {
       shares,
       amount,
       bet: bet || null,
+      bet_logged: betLogged,
     });
   } catch (error: any) {
     console.error('[Bet] Error:', error);

@@ -48,7 +48,7 @@ type BetButtonsProps = {
   walletAddress?: string | null;
   balance?: number | null;
   recommendedDirection?: "UP" | "DOWN" | null;
-  onBetPlaced: (bet: { direction: string; amount: number }) => void;
+  onBetPlaced: (bet: { direction: string; amount: number; dbId?: number }) => void;
   onMarketExpired?: () => void;
   disabled?: boolean;
 };
@@ -117,7 +117,7 @@ export function BetButtons({
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
 
-      onBetPlaced({ direction, amount });
+      onBetPlaced({ direction, amount, dbId: data.bet?.id });
 
       // Sound + haptic feedback
       playBetPlaced();

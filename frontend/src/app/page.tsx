@@ -65,7 +65,7 @@ function SignalBanner({ deepLink, walletAddress, balance, onBetPlaced }: {
   deepLink: DeepLink;
   walletAddress: string | null;
   balance: number | null;
-  onBetPlaced: (info: { asset: string; direction: string; amount: number; timeframe: string; entryPrice?: number }) => void;
+  onBetPlaced: (info: { asset: string; direction: string; amount: number; timeframe: string; entryPrice?: number; dbId?: number }) => void;
 }) {
   const { asset, tf, edge, dir, synthPct, polyPct, slug, entryPrice, ts } = deepLink;
   const [betting, setBetting] = useState(false);
@@ -113,7 +113,7 @@ function SignalBanner({ deepLink, walletAddress, balance, onBetPlaced }: {
 
       setBetDone(true);
       playBetPlaced();
-      onBetPlaced({ asset: asset!, direction: dir!, amount, timeframe: tf || "15m", entryPrice: entryPrice || 0 });
+      onBetPlaced({ asset: asset!, direction: dir!, amount, timeframe: tf || "15m", entryPrice: entryPrice || 0, dbId: data.bet?.id });
       haptic("success");
     } catch (err: any) {
       setBetError(err.message || "Trade failed");
@@ -209,6 +209,7 @@ export default function Home() {
   const { markets: featuredMarkets, loading: featuredLoading, categories: featuredCategories } = useFeaturedMarkets();
   const [resultToast, setResultToast] = useState<{ type: "won" | "lost"; text: string } | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [portfolioRefreshKey, setPortfolioRefreshKey] = useState(0);
   const knownResolvedIds = useRef(new Set<number>(
     typeof window !== "undefined"
       ? JSON.parse(localStorage.getItem("deja_resolved_ids") || "[]")
@@ -452,6 +453,7 @@ export default function Home() {
     timeframe: string;
     entryPrice?: number;
     endTime?: string;
+    dbId?: number;
   }) {
     setLastBet(
       `${info.direction} ${info.asset} $${info.amount} (${info.timeframe})`
@@ -473,10 +475,61 @@ export default function Home() {
       timeframe: info.timeframe,
       entryPrice: info.entryPrice || insight?.current_price || 0,
       endTime: info.endTime || insight?.event_end_time,
+      dbId: info.dbId,
     };
 
     setLiveBets((prev) => [...prev, newBet]);
     setLiveBetOpen(true);
+  }
+
+  async function handleCashOut(bet: LiveBet, currentPrice: number) {
+    const user = getTelegramUser();
+    if (!user?.id || !bet.dbId) return;
+
+    try {
+      const res = await fetch("/api/bet/close", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          telegram_id: user.id,
+          bet_id: bet.dbId,
+          current_price: currentPrice,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Close failed");
+
+      // Remove bet from live bets
+      setLiveBets((prev) => prev.filter((b) => b.id !== bet.id));
+      if (liveBets.length <= 1) setLiveBetOpen(false);
+
+      // Show result toast
+      const pnl = data.pnl || 0;
+      setResultToast({
+        type: pnl >= 0 ? "won" : "lost",
+        text: `${bet.asset} ${bet.direction} — ${pnl >= 0 ? "+" : ""}$${pnl.toFixed(2)}`,
+      });
+      setTimeout(() => setResultToast(null), 4000);
+
+      // Play sound + haptic
+      if (pnl >= 0) {
+        playWin();
+        haptic("success");
+      } else {
+        playLose();
+        haptic("error");
+      }
+
+      // Refresh balance
+      setTimeout(fetchBalance, 1000);
+    } catch (err: any) {
+      console.error("[CashOut] Error:", err);
+      haptic("error");
+      // Show error toast
+      setResultToast({ type: "lost", text: err.message || "Cash out failed" });
+      setTimeout(() => setResultToast(null), 4000);
+    }
   }
 
   function copyAddress() {
@@ -840,7 +893,7 @@ export default function Home() {
                 </div>
               </div>
             )}
-            <Portfolio />
+            <Portfolio refreshKey={portfolioRefreshKey} />
           </>
         )}
         {tab === "leaderboard" && <Leaderboard />}
@@ -905,6 +958,7 @@ export default function Home() {
           bets={liveBets}
           onClose={() => setLiveBetOpen(false)}
           telegramId={getTelegramUser()?.id}
+          onCashOut={handleCashOut}
         />
       )}
 
@@ -951,7 +1005,7 @@ export default function Home() {
           ).map(({ key, label, icon }) => (
             <button
               key={key}
-              onClick={() => { haptic("selection"); setTab(key); if (key === "portfolio") checkResolvedBets(); }}
+              onClick={() => { haptic("selection"); setTab(key); if (key === "portfolio") { checkResolvedBets(); setPortfolioRefreshKey((k) => k + 1); } }}
               className={`relative flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg transition-all ${
                 tab === key
                   ? "text-amber"

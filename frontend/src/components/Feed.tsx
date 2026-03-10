@@ -12,6 +12,7 @@ type FeedItem = {
   result: string;
   pnl: number;
   createdAt: string;
+  isPaper?: boolean;
 };
 
 function timeAgo(dateStr: string) {
@@ -80,8 +81,15 @@ function FeedEntry({ item }: { item: FeedItem }) {
 
       {/* Amount / result */}
       <div className="text-right shrink-0">
-        <div className="text-sm font-bold font-mono text-white">
-          ${item.amount}
+        <div className="flex items-center justify-end gap-1">
+          {item.isPaper && (
+            <span className="text-[8px] font-bold px-1 py-0.5 rounded bg-white/10 text-white/40 uppercase">
+              Paper
+            </span>
+          )}
+          <span className="text-sm font-bold font-mono text-white">
+            ${item.amount}
+          </span>
         </div>
         {won && (
           <div className="text-[10px] font-bold font-mono text-up">
