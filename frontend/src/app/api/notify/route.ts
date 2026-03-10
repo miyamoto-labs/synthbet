@@ -203,11 +203,12 @@ export async function GET(req: Request) {
     `\n\n<i>Powered by Synth Monte Carlo · Real USDC on Polymarket</i>`;
 
   // Dynamic banner (type=edge for edge alerts)
+  // Include timestamp to bust Telegram's aggressive image cache
   const bannerUrl = `${APP_URL}/api/og?type=edge&title=${encodeURIComponent(
     `${signals.length} Edge Signal${signals.length > 1 ? "s" : ""}`
   )}&subtitle=${encodeURIComponent(
     signals.map((s) => `${s.asset} ${s.tradeDirection}`).join(" · ")
-  )}`;
+  )}&v=${Date.now()}`;
 
   // Deep-link to the strongest signal with original signal data
   const top = signals[0];

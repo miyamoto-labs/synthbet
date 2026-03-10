@@ -202,7 +202,7 @@ const sounds: { name: string; desc: string; play: () => void }[] = [
 export default function SoundsPage() {
   return (
     <div className="min-h-screen bg-[#111] text-white p-6 space-y-3">
-      <h1 className="text-2xl font-bold mb-2">SynthBet Sound Preview</h1>
+      <h1 className="text-2xl font-bold mb-2">Déja. Sound Preview</h1>
       <p className="text-white/50 text-sm mb-6">Tap any button to preview. Pick your favorites and tell me!</p>
 
       <div className="space-y-2">

@@ -171,7 +171,7 @@ export function shareToStory(mediaUrl: string, text?: string) {
   try {
     tg()?.shareToStory(mediaUrl, {
       text,
-      widget_link: { url: "https://t.me/synthbet_bot", name: "SynthBet" },
+      widget_link: { url: "https://t.me/synthbet_bot", name: "Déja." },
     });
   } catch {}
 }
