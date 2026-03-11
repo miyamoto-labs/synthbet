@@ -401,7 +401,7 @@ export function LiveBetView({ bets, onClose, onCashOut, telegramId }: LiveBetVie
 
   return (
     <div
-      className="fixed inset-0 bg-bg z-50 flex flex-col animate-scale-in overflow-hidden"
+      className="fixed inset-0 bg-bg z-[60] flex flex-col animate-scale-in overflow-hidden"
       onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX; }}
       onTouchMove={(e) => { touchEndX.current = e.touches[0].clientX; }}
       onTouchEnd={handleSwipe}
