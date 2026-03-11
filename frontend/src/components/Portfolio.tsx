@@ -17,13 +17,21 @@ type Bet = {
   created_at: string;
 };
 
+type FeaturedMarketPrice = {
+  slug: string;
+  noSlug: string | null;
+  yesPrice: number;
+  noPrice: number;
+};
+
 type PortfolioProps = {
   refreshKey?: number;
   markets?: MarketData[];
+  featuredMarkets?: FeaturedMarketPrice[];
   onSell?: (betId: number, currentPrice: number) => Promise<{ pnl: number } | null>;
 };
 
-export function Portfolio({ refreshKey, markets, onSell }: PortfolioProps) {
+export function Portfolio({ refreshKey, markets, featuredMarkets, onSell }: PortfolioProps) {
   const [bets, setBets] = useState<Bet[]>([]);
   const [loading, setLoading] = useState(true);
   const [redeeming, setRedeeming] = useState(false);
@@ -62,6 +70,17 @@ export function Portfolio({ refreshKey, markets, onSell }: PortfolioProps) {
 
   // Get current price for a bet from markets data
   function getCurrentPrice(bet: Bet): number | null {
+    // Featured/event market bets — look up from featuredMarkets
+    if (bet.timeframe === "event" && bet.event_slug && featuredMarkets) {
+      const fm = featuredMarkets.find(
+        (m) => m.slug === bet.event_slug || m.noSlug === bet.event_slug
+      );
+      if (!fm) return null;
+      // For UP/YES bets: current yesPrice. For DOWN/NO bets: current noPrice.
+      return bet.direction === "UP" ? fm.yesPrice : fm.noPrice;
+    }
+
+    // Synth up/down markets (BTC/ETH/SOL)
     if (!markets) return null;
     const market = markets.find((m) => m.asset === bet.asset);
     if (!market) return null;

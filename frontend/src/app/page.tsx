@@ -841,7 +841,7 @@ export default function Home() {
                 </div>
               </div>
             )}
-            <Portfolio refreshKey={portfolioRefreshKey} markets={markets} onSell={handlePortfolioSell} />
+            <Portfolio refreshKey={portfolioRefreshKey} markets={markets} featuredMarkets={featuredMarkets} onSell={handlePortfolioSell} />
           </>
         )}
         {tab === "leaderboard" && <Leaderboard />}
