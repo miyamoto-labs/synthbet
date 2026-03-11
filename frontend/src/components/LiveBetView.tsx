@@ -255,7 +255,7 @@ function SingleBetView({ bet, telegramId, onStatusChange, onPriceUpdate }: {
   const tfLabel = bet.timeframe === "15m" ? "15 Min" : bet.timeframe === "1h" ? "1 Hour" : "Daily";
 
   return (
-    <div className="flex-1 min-h-0 flex flex-col items-center justify-center px-6 relative overflow-y-auto">
+    <div className="flex flex-col items-center justify-center px-6 py-4 relative">
       {/* Screen flash overlay */}
       {flash && (
         <div className={`absolute inset-0 pointer-events-none ${
@@ -452,35 +452,35 @@ export function LiveBetView({ bets, onClose, onCashOut, telegramId }: LiveBetVie
         </div>
       )}
 
-      {/* Active bet */}
-      <SingleBetView
-        key={activeBet.id}
-        bet={activeBet}
-        telegramId={telegramId}
-        onStatusChange={(winning, isExpired) => {
-          // Confetti + sound when winning at expiry
-          if (isExpired && winning && !confettiPlayedRef.current) {
-            confettiPlayedRef.current = true;
-            setShowConfetti(true);
-            playWin();
-            haptic("success");
-            setTimeout(() => setShowConfetti(false), 3500);
-          } else if (isExpired && !winning && !confettiPlayedRef.current) {
-            confettiPlayedRef.current = true;
-            playLose();
-            haptic("error");
-          }
-        }}
-        onPriceUpdate={(price, pnl, isExpired) => {
-          setActivePriceInfo({ price, pnl, expired: isExpired });
-        }}
-      />
+      {/* Scrollable middle — bet content */}
+      <div className="flex-1 min-h-0 overflow-y-auto">
+        <SingleBetView
+          key={activeBet.id}
+          bet={activeBet}
+          telegramId={telegramId}
+          onStatusChange={(winning, isExpired) => {
+            if (isExpired && winning && !confettiPlayedRef.current) {
+              confettiPlayedRef.current = true;
+              setShowConfetti(true);
+              playWin();
+              haptic("success");
+              setTimeout(() => setShowConfetti(false), 3500);
+            } else if (isExpired && !winning && !confettiPlayedRef.current) {
+              confettiPlayedRef.current = true;
+              playLose();
+              haptic("error");
+            }
+          }}
+          onPriceUpdate={(price, pnl, isExpired) => {
+            setActivePriceInfo({ price, pnl, expired: isExpired });
+          }}
+        />
+      </div>
 
       <Confetti active={showConfetti} />
 
-      {/* Bottom — shrink-0 ensures buttons are always visible */}
-      <div className="px-6 pb-8 space-y-3 shrink-0">
-        {/* Cash Out button — always rendered, disabled when expired */}
+      {/* PINNED bottom — Cash Out + Minimize, always visible */}
+      <div className="shrink-0 px-6 pb-6 pt-3 space-y-2 bg-bg border-t border-amber/5">
         <button
           onClick={async (e) => {
             e.stopPropagation();
@@ -493,12 +493,12 @@ export function LiveBetView({ bets, onClose, onCashOut, telegramId }: LiveBetVie
             }
           }}
           disabled={cashingOut || activePriceInfo.expired || !onCashOut}
-          className={`w-full py-3.5 rounded-xl text-sm font-bold transition-all active:scale-[0.98] disabled:opacity-50 ${
+          className={`w-full py-4 rounded-xl text-base font-bold transition-all active:scale-[0.98] disabled:opacity-50 ${
             activePriceInfo.expired
               ? "bg-ink/10 text-muted"
               : activePriceInfo.pnl >= 0
-                ? "bg-up text-charcoal shadow-sm"
-                : "bg-down text-white shadow-sm"
+                ? "bg-up text-charcoal shadow-lg shadow-up/20"
+                : "bg-down text-white shadow-lg shadow-down/20"
           }`}
         >
           {cashingOut
@@ -510,13 +510,10 @@ export function LiveBetView({ bets, onClose, onCashOut, telegramId }: LiveBetVie
         </button>
         <button
           onClick={(e) => { e.stopPropagation(); onClose(); }}
-          className="w-full py-3 rounded-xl text-sm font-semibold text-ink/50 bg-ink/5 border border-amber/10 active:bg-ink/10 transition-colors"
+          className="w-full py-2.5 rounded-xl text-xs font-semibold text-ink/40 active:bg-ink/10 transition-colors"
         >
           Minimize
         </button>
-        <p className="text-muted/60 text-[10px] font-mono text-center">
-          Live price from Hyperliquid · Final result from Polymarket
-        </p>
       </div>
     </div>
   );
