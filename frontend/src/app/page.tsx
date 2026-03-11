@@ -997,8 +997,8 @@ export default function Home() {
           </div>
         </div>
       )}
-      {/* Bottom Tab Bar */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-md border-t border-amber/10">
+      {/* Bottom Tab Bar — hide when LiveBetView is open */}
+      <nav className={`fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-md border-t border-amber/10 ${liveBetOpen ? "hidden" : ""}`}>
         <div className="flex items-center justify-around px-2 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
           {(
             [

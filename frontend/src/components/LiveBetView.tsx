@@ -480,7 +480,7 @@ export function LiveBetView({ bets, onClose, onCashOut, telegramId }: LiveBetVie
       <Confetti active={showConfetti} />
 
       {/* PINNED bottom — Cash Out + Minimize, always visible */}
-      <div className="shrink-0 px-6 pb-6 pt-3 space-y-2 bg-bg border-t border-amber/5">
+      <div className="shrink-0 px-6 pt-3 pb-8 space-y-2 bg-bg border-t border-amber/5">
         <button
           onClick={async (e) => {
             e.stopPropagation();
