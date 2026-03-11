@@ -448,6 +448,16 @@ export default function Home() {
       setLiveBets([newBet]);
       setLiveBetOpen(true);
     }
+
+    // For event bets, switch to Portfolio tab so user can sell
+    if (info.timeframe === "event") {
+      setResultToast({ type: "won", text: "Position opened! Sell anytime in Portfolio" });
+      setTimeout(() => setResultToast(null), 4000);
+      setTimeout(() => {
+        setTab("portfolio");
+        setPortfolioRefreshKey((k) => k + 1);
+      }, 1500);
+    }
   }
 
   async function handleCashOut(bet: LiveBet, currentPrice: number) {

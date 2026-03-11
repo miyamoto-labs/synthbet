@@ -529,6 +529,7 @@ function ExpandedMarketView({
         timeframe: "event",
         entryPrice: betPrice,
         endTime: market.endDate,
+        dbId: data.bet?.id,
       });
     } catch (err: any) {
       setError(err.message || "Bet failed");
