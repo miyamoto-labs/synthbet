@@ -10,6 +10,7 @@ import { Confetti } from "@/components/Confetti";
 import { Onboarding } from "@/components/Onboarding";
 import { FeaturedMarkets, CategoryPills, useFeaturedMarkets } from "@/components/FeaturedMarkets";
 import { Feed } from "@/components/Feed";
+import { LiveBetView, LiveBet } from "@/components/LiveBetView";
 import {
   getTelegramWebApp,
   haptic,
@@ -204,6 +205,8 @@ export default function Home() {
   const [resultToast, setResultToast] = useState<{ type: "won" | "lost"; text: string } | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
   const [portfolioRefreshKey, setPortfolioRefreshKey] = useState(0);
+  const [liveBets, setLiveBets] = useState<LiveBet[]>([]);
+  const [liveBetOpen, setLiveBetOpen] = useState(false);
   const knownResolvedIds = useRef(new Set<number>(
     typeof window !== "undefined"
       ? JSON.parse(localStorage.getItem("deja_resolved_ids") || "[]")
@@ -429,6 +432,70 @@ export default function Home() {
     // Refresh balance after trade
     setTimeout(fetchBalance, 2000);
     setTimeout(() => setLastBet(null), 3000);
+
+    // Open LiveBetView for synth bets (have real-time price feeds)
+    if (info.entryPrice && info.timeframe !== "event") {
+      const newBet: LiveBet = {
+        id: `${info.asset}-${Date.now()}`,
+        dbId: info.dbId,
+        asset: info.asset,
+        direction: info.direction as "UP" | "DOWN",
+        amount: info.amount,
+        timeframe: info.timeframe,
+        entryPrice: info.entryPrice,
+        endTime: info.endTime,
+      };
+      setLiveBets([newBet]);
+      setLiveBetOpen(true);
+    }
+  }
+
+  async function handleCashOut(bet: LiveBet, currentPrice: number) {
+    const user = getTelegramUser();
+    if (!user?.id || !bet.dbId) return;
+
+    try {
+      const res = await fetch("/api/bet/close", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          telegram_id: user.id,
+          bet_id: bet.dbId,
+          current_price: currentPrice,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Close failed");
+
+      const pnl = data.pnl || 0;
+
+      setResultToast({
+        type: pnl >= 0 ? "won" : "lost",
+        text: `Sold — ${pnl >= 0 ? "+" : ""}$${pnl.toFixed(2)}`,
+      });
+      setTimeout(() => setResultToast(null), 4000);
+
+      if (pnl >= 0) {
+        playWin();
+        haptic("success");
+      } else {
+        playLose();
+        haptic("error");
+      }
+
+      setTimeout(fetchBalance, 1000);
+      setPortfolioRefreshKey((k) => k + 1);
+
+      // Close the live view after selling
+      setLiveBetOpen(false);
+      setLiveBets([]);
+    } catch (err: any) {
+      console.error("[CashOut] Error:", err);
+      haptic("error");
+      setResultToast({ type: "lost", text: err.message || "Sell failed" });
+      setTimeout(() => setResultToast(null), 4000);
+    }
   }
 
   async function handlePortfolioSell(betId: number, currentPrice: number): Promise<{ pnl: number } | null> {
@@ -846,6 +913,26 @@ export default function Home() {
         )}
         {tab === "leaderboard" && <Leaderboard />}
       </div>
+
+      {/* LiveBetView overlay */}
+      {liveBetOpen && liveBets.length > 0 && (
+        <LiveBetView
+          bets={liveBets}
+          onClose={() => setLiveBetOpen(false)}
+          onCashOut={handleCashOut}
+        />
+      )}
+
+      {/* Floating pill — tap to reopen live view */}
+      {liveBets.length > 0 && !liveBetOpen && (
+        <button
+          onClick={() => setLiveBetOpen(true)}
+          className="fixed bottom-24 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 px-4 py-2 rounded-full bg-amber/90 text-charcoal font-bold text-xs shadow-lg animate-pulse active:scale-95 transition-transform"
+        >
+          <span className="w-2 h-2 rounded-full bg-up animate-ping" />
+          {liveBets.length} active bet{liveBets.length > 1 ? "s" : ""} · Tap to watch
+        </button>
+      )}
 
       {/* Export Private Key Modal */}
       {showExportKey && (
