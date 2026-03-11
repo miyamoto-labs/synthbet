@@ -400,6 +400,7 @@ function ExpandedMarketView({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  const [customAmt, setCustomAmt] = useState("");
   const countdown = useCountdown(market.endDate);
 
   const noWallet = !walletAddress;
@@ -540,7 +541,7 @@ function ExpandedMarketView({
   }
 
   return (
-    <div className="fixed inset-0 bg-bg z-50 flex flex-col animate-scale-in">
+    <div className="fixed inset-0 bg-bg z-[60] flex flex-col animate-scale-in">
       {/* Header bar */}
       <div className="flex items-center justify-between px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-2 border-b border-amber/10">
         <button
@@ -787,6 +788,35 @@ function ExpandedMarketView({
                     </button>
                   ))}
                 </div>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40 text-sm font-mono">$</span>
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      placeholder="Custom"
+                      value={customAmt}
+                      onChange={(e) => setCustomAmt(e.target.value)}
+                      className="w-full py-2 pl-7 pr-3 bg-ink/5 text-white rounded-lg text-sm font-mono font-bold border border-amber/10 placeholder:text-white/20 focus:outline-none focus:border-amber/30"
+                    />
+                  </div>
+                  <button
+                    onClick={() => {
+                      const amt = parseInt(customAmt);
+                      if (amt >= 5 && amt <= 100) {
+                        playChipToss();
+                        haptic("light");
+                        placeBet(amt);
+                      } else {
+                        setError("$5 – $100");
+                      }
+                    }}
+                    disabled={loading || noBalance || !customAmt}
+                    className="px-4 py-2 bg-amber text-charcoal rounded-lg text-sm font-bold disabled:opacity-50 active:scale-95 transition-all"
+                  >
+                    Bet
+                  </button>
+                </div>
                 {error && (
                   <p className="text-xs text-down text-center font-medium">
                     {error}
@@ -822,6 +852,7 @@ function MarketBetCard({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  const [customAmt, setCustomAmt] = useState("");
   const countdown = useCountdown(market.endDate);
 
   const noWallet = !walletAddress;
@@ -1008,7 +1039,7 @@ function MarketBetCard({
         </div>
       )}
 
-      {/* Amount grid */}
+      {/* Amount grid + custom input */}
       {side && !done && (
         <div className="space-y-2 animate-fade-up" onClick={(e) => e.stopPropagation()}>
           {noBalance && (
@@ -1031,6 +1062,35 @@ function MarketBetCard({
                 {loading ? "..." : `$${amt}`}
               </button>
             ))}
+          </div>
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40 text-sm font-mono">$</span>
+              <input
+                type="number"
+                inputMode="numeric"
+                placeholder="Custom"
+                value={customAmt}
+                onChange={(e) => setCustomAmt(e.target.value)}
+                className="w-full py-2 pl-7 pr-3 bg-ink/5 text-white rounded-lg text-sm font-mono font-bold border border-amber/10 placeholder:text-white/20 focus:outline-none focus:border-amber/30"
+              />
+            </div>
+            <button
+              onClick={() => {
+                const amt = parseInt(customAmt);
+                if (amt >= 5 && amt <= 100) {
+                  playChipToss();
+                  haptic("light");
+                  placeBet(amt);
+                } else {
+                  setError("$5 – $100");
+                }
+              }}
+              disabled={loading || noBalance || !customAmt}
+              className="px-4 py-2 bg-amber text-charcoal rounded-lg text-sm font-bold disabled:opacity-50 active:scale-95 transition-all"
+            >
+              Bet
+            </button>
           </div>
           {error && (
             <p className="text-xs text-down text-center font-medium">
