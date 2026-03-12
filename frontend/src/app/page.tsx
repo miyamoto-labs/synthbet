@@ -524,7 +524,7 @@ export default function Home() {
     }
   }
 
-  async function handlePortfolioSell(betId: number, currentPrice: number): Promise<{ pnl: number } | null> {
+  async function handlePortfolioSell(betId: number, currentPrice: number, fraction: number = 1): Promise<{ pnl: number } | null> {
     const user = getTelegramUser();
     if (!user?.id) return null;
 
@@ -536,6 +536,7 @@ export default function Home() {
           telegram_id: user.id,
           bet_id: betId,
           current_price: currentPrice,
+          sell_fraction: fraction,
         }),
       });
 
@@ -543,11 +544,15 @@ export default function Home() {
       if (!res.ok) throw new Error(data.error || "Close failed");
 
       const pnl = data.pnl || 0;
+      const isPartial = fraction < 0.99;
+      const pctLabel = Math.round(fraction * 100);
 
       // Show result toast
       setResultToast({
         type: pnl >= 0 ? "won" : "lost",
-        text: `Sold — ${pnl >= 0 ? "+" : ""}$${pnl.toFixed(2)}`,
+        text: isPartial
+          ? `Sold ${pctLabel}% — ${pnl >= 0 ? "+" : ""}$${pnl.toFixed(2)}`
+          : `Sold — ${pnl >= 0 ? "+" : ""}$${pnl.toFixed(2)}`,
       });
       setTimeout(() => setResultToast(null), 4000);
 
