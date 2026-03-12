@@ -202,8 +202,8 @@ export async function GET(req: Request) {
     lines.join("\n\n") +
     `\n\n<i>Powered by Synth Monte Carlo · Real USDC on Polymarket</i>`;
 
-  // Static banner — bypasses Vercel CDN caching issues with next/og
-  const bannerUrl = `${APP_URL}/banner-signal.png`;
+  // Static banner hosted on GitHub (Vercel URLs are auth-protected)
+  const bannerUrl = `https://raw.githubusercontent.com/miyamoto-labs/synthbet/main/frontend/public/banner-signal.png`;
 
   // Deep-link to the strongest signal with original signal data
   const top = signals[0];
