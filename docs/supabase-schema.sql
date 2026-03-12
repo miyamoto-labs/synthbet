@@ -25,15 +25,17 @@ CREATE INDEX IF NOT EXISTS idx_synth_users_telegram_id ON synth_users(telegram_i
 CREATE TABLE IF NOT EXISTS synth_bets (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES synth_users(id) ON DELETE CASCADE NOT NULL,
-  asset TEXT NOT NULL CHECK (asset IN ('BTC', 'ETH', 'SOL')),
+  asset TEXT NOT NULL,                -- crypto tickers, sports teams, any market
   direction TEXT NOT NULL CHECK (direction IN ('UP', 'DOWN')),
-  timeframe TEXT NOT NULL CHECK (timeframe IN ('1h', 'daily')),
+  timeframe TEXT NOT NULL,            -- '15m', '1h', 'daily', 'event', etc.
   amount NUMERIC(10, 2) NOT NULL CHECK (amount > 0),
   synth_prob_up NUMERIC(6, 4) DEFAULT 0,
   poly_prob_up NUMERIC(6, 4) DEFAULT 0,
   entry_price NUMERIC(20, 8) DEFAULT 0,
-  result TEXT DEFAULT 'pending' CHECK (result IN ('pending', 'won', 'lost')),
+  result TEXT DEFAULT 'pending' CHECK (result IN ('pending', 'won', 'lost', 'closed')),
   pnl NUMERIC(12, 2) DEFAULT 0.00,
+  order_id TEXT,                      -- CLOB order ID for live trading
+  clob_status TEXT,                   -- CLOB order status tracking
   event_slug TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
   resolved_at TIMESTAMPTZ
