@@ -119,7 +119,7 @@ export function MarketCard({ asset, min15, hourly, daily, onBetPlaced, onMarketE
   const absEdge = Math.abs(edge);
   const priceChange = ((insight.current_price - insight.start_price) / insight.start_price) * 100;
 
-  const EDGE_THRESHOLD = 15;
+  const EDGE_THRESHOLD = 10;
   const hasTradeableEdge = absEdge >= EDGE_THRESHOLD;
   const recommendedDirection: "UP" | "DOWN" | null = hasTradeableEdge
     ? (edge > 0 ? "UP" : "DOWN")

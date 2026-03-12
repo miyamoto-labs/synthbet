@@ -5,7 +5,7 @@ const SYNTH_BASE_URL = "https://api.synthdata.co";
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN!;
 const CHAT_ID = process.env.TELEGRAM_CHAT_ID!;
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://frontend-three-phi-40.vercel.app").trim();
-const EDGE_THRESHOLD = 15; // only notify on real edge (15%+)
+const EDGE_THRESHOLD = 10; // notify on edge (10%+)
 const ASSETS = ["BTC", "ETH", "SOL"] as const;
 const TIMEFRAMES = ["15min", "hourly", "daily"] as const;
 const CRON_SECRET = process.env.CRON_SECRET;
@@ -182,7 +182,7 @@ export async function GET(req: Request) {
   }
 
   if (signals.length === 0) {
-    return NextResponse.json({ sent: false, reason: "No edges above 15% threshold" });
+    return NextResponse.json({ sent: false, reason: "No edges above 10% threshold" });
   }
 
   // Sort by edge strength descending
