@@ -327,30 +327,12 @@ function SingleBetView({ bet, telegramId, onStatusChange, onPriceUpdate, onSell,
         </div>
       )}
 
-      {/* Entry vs Current */}
-      <div className="grid grid-cols-2 gap-4 w-full max-w-xs">
-        <div className="bg-ink/5 rounded-xl p-3 text-center border border-amber/10">
-          <div className="text-muted text-[9px] font-mono uppercase tracking-wider mb-1">Entry</div>
-          <div className="text-ink font-bold font-mono text-sm">{formatPrice(bet.entryPrice)}</div>
-        </div>
-        <div className={`rounded-xl p-3 text-center border ${
-          isWinning ? "bg-up/10 border-up/20" : priceDiff === 0 ? "bg-ink/5 border-amber/10" : "bg-down/10 border-down/20"
-        }`}>
-          <div className="text-muted text-[9px] font-mono uppercase tracking-wider mb-1">Status</div>
-          <div className={`font-bold font-mono text-sm ${
-            isWinning ? "text-up" : priceDiff === 0 ? "text-ink/60" : "text-down"
-          }`}>
-            {isWinning ? "WINNING" : priceDiff === 0 ? "EVEN" : "LOSING"}
-          </div>
-        </div>
-      </div>
-
-      {/* Sell button — inside scrollable area so it's always reachable */}
-      {onSell && (
+      {/* Sell button replaces Entry/Status cards to fit in Telegram viewport */}
+      {onSell ? (
         <button
           onClick={() => !isSelling && !expired && onSell(bet, currentPrice)}
           disabled={isSelling || expired}
-          className={`w-full max-w-xs mt-5 py-4 rounded-xl text-base font-bold transition-all active:scale-[0.98] disabled:opacity-50 ${
+          className={`w-full max-w-xs mt-2 py-4 rounded-xl text-base font-bold transition-all active:scale-[0.98] disabled:opacity-50 ${
             expired
               ? "bg-ink/10 text-muted"
               : isWinning || priceDiff === 0
@@ -365,6 +347,23 @@ function SingleBetView({ bet, telegramId, onStatusChange, onPriceUpdate, onSell,
               : `Sell Position (${estimatedPnl >= 0 ? "+" : ""}$${Math.abs(estimatedPnl).toFixed(2)})`
           }
         </button>
+      ) : (
+        <div className="grid grid-cols-2 gap-4 w-full max-w-xs">
+          <div className="bg-ink/5 rounded-xl p-3 text-center border border-amber/10">
+            <div className="text-muted text-[9px] font-mono uppercase tracking-wider mb-1">Entry</div>
+            <div className="text-ink font-bold font-mono text-sm">{formatPrice(bet.entryPrice)}</div>
+          </div>
+          <div className={`rounded-xl p-3 text-center border ${
+            isWinning ? "bg-up/10 border-up/20" : priceDiff === 0 ? "bg-ink/5 border-amber/10" : "bg-down/10 border-down/20"
+          }`}>
+            <div className="text-muted text-[9px] font-mono uppercase tracking-wider mb-1">Status</div>
+            <div className={`font-bold font-mono text-sm ${
+              isWinning ? "text-up" : priceDiff === 0 ? "text-ink/60" : "text-down"
+            }`}>
+              {isWinning ? "WINNING" : priceDiff === 0 ? "EVEN" : "LOSING"}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
