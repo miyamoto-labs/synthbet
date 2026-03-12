@@ -202,13 +202,8 @@ export async function GET(req: Request) {
     lines.join("\n\n") +
     `\n\n<i>Powered by Synth Monte Carlo · Real USDC on Polymarket</i>`;
 
-  // Dynamic banner (type=edge for edge alerts)
-  // Include timestamp to bust Telegram's aggressive image cache
-  const bannerUrl = `${APP_URL}/api/signal-banner?type=edge&title=${encodeURIComponent(
-    `${signals.length} Edge Signal${signals.length > 1 ? "s" : ""}`
-  )}&subtitle=${encodeURIComponent(
-    signals.map((s) => `${s.asset} ${s.tradeDirection}`).join(" · ")
-  )}&v=${Date.now()}`;
+  // Static banner — bypasses Vercel CDN caching issues with next/og
+  const bannerUrl = `${APP_URL}/banner-signal.png`;
 
   // Deep-link to the strongest signal with original signal data
   const top = signals[0];
