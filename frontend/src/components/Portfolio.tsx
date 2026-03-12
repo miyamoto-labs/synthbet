@@ -28,7 +28,7 @@ type PortfolioProps = {
   refreshKey?: number;
   markets?: MarketData[];
   featuredMarkets?: FeaturedMarketPrice[];
-  onSell?: (betId: number, currentPrice: number, fraction?: number) => Promise<{ pnl: number } | null>;
+  onSell?: (betId: number, currentPrice: number) => Promise<{ pnl: number } | null>;
 };
 
 export function Portfolio({ refreshKey, markets, featuredMarkets, onSell }: PortfolioProps) {
@@ -37,9 +37,6 @@ export function Portfolio({ refreshKey, markets, featuredMarkets, onSell }: Port
   const [redeeming, setRedeeming] = useState(false);
   const [redeemResult, setRedeemResult] = useState<string | null>(null);
   const [sellingId, setSellingId] = useState<number | null>(null);
-  const [expandedSellId, setExpandedSellId] = useState<number | null>(null);
-  const [sellFraction, setSellFraction] = useState<number | null>(null);
-  const [customSellAmount, setCustomSellAmount] = useState("");
 
   const fetchBets = useCallback(async () => {
     try {
@@ -109,18 +106,16 @@ export function Portfolio({ refreshKey, markets, featuredMarkets, onSell }: Port
     return { pnl, currentPrice };
   }
 
-  async function handleSell(bet: Bet, fraction: number) {
+  async function handleSell(bet: Bet) {
     if (!onSell || sellingId) return;
     const estimate = getEstimatedPnl(bet);
     if (!estimate) return;
 
     setSellingId(bet.id);
     try {
-      const result = await onSell(bet.id, estimate.currentPrice, fraction);
+      const result = await onSell(bet.id, estimate.currentPrice);
       if (result) {
-        setExpandedSellId(null);
-        setSellFraction(null);
-        setCustomSellAmount("");
+        // Re-fetch to show updated status
         await fetchBets();
       }
     } finally {
@@ -346,128 +341,25 @@ export function Portfolio({ refreshKey, markets, featuredMarkets, onSell }: Port
               </span>
             </div>
 
-            {/* Sell controls for pending bets */}
+            {/* Sell button for pending bets */}
             {isPending && onSell && (
-              <>
-                {expandedSellId === bet.id ? (
-                  <div className="mt-2.5 space-y-2">
-                    {/* Preset fraction chips */}
-                    <div className="flex gap-1.5">
-                      {[0.25, 0.5, 0.75, 1].map((frac) => {
-                        const pctLabel = frac === 1 ? "ALL" : `${Math.round(frac * 100)}%`;
-                        const fracAmount = Math.round(bet.amount * frac * 100) / 100;
-                        const isSelected = sellFraction === frac && !customSellAmount;
-                        const fracPnl = estimate ? estimate.pnl * frac : 0;
-                        return (
-                          <button
-                            key={frac}
-                            onClick={() => {
-                              setSellFraction(frac);
-                              setCustomSellAmount("");
-                            }}
-                            className={`flex-1 py-2 rounded-lg text-center transition-all active:scale-[0.96] ${
-                              isSelected
-                                ? fracPnl >= 0
-                                  ? "bg-up text-charcoal ring-2 ring-up/40"
-                                  : "bg-down text-white ring-2 ring-down/40"
-                                : "bg-ink/8 text-muted border border-amber/10"
-                            }`}
-                          >
-                            <div className="text-[10px] font-bold leading-tight">{pctLabel}</div>
-                            <div className={`text-[9px] font-mono leading-tight mt-0.5 ${
-                              isSelected
-                                ? fracPnl >= 0 ? "text-charcoal/70" : "text-white/70"
-                                : "text-muted/50"
-                            }`}>
-                              ${fracAmount.toFixed(0)}
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    {/* Custom dollar input */}
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted/50 text-xs font-mono">$</span>
-                      <input
-                        type="number"
-                        inputMode="decimal"
-                        placeholder={`Custom (max ${bet.amount.toFixed(0)})`}
-                        value={customSellAmount}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setCustomSellAmount(val);
-                          if (val) {
-                            const num = parseFloat(val);
-                            if (num > 0 && num <= bet.amount) {
-                              setSellFraction(Math.min(1, num / bet.amount));
-                            } else {
-                              setSellFraction(null);
-                            }
-                          } else {
-                            setSellFraction(null);
-                          }
-                        }}
-                        className="w-full bg-ink/8 border border-amber/10 rounded-lg py-2 pl-6 pr-3 text-xs font-mono text-ink placeholder:text-muted/30 focus:outline-none focus:border-amber/30"
-                      />
-                    </div>
-
-                    {/* Confirm + Cancel row */}
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => {
-                          setExpandedSellId(null);
-                          setSellFraction(null);
-                          setCustomSellAmount("");
-                        }}
-                        className="px-4 py-2 rounded-lg text-xs font-medium text-muted/60 bg-ink/5 active:bg-ink/10"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        onClick={() => sellFraction && handleSell(bet, sellFraction)}
-                        disabled={isSelling || !sellFraction || !estimate}
-                        className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all active:scale-[0.98] disabled:opacity-40 ${
-                          !sellFraction
-                            ? "bg-ink/10 text-muted/60"
-                            : (estimate?.pnl ?? 0) * sellFraction >= 0
-                              ? "bg-up text-charcoal"
-                              : "bg-down text-white"
-                        }`}
-                      >
-                        {isSelling
-                          ? "Selling..."
-                          : !sellFraction
-                            ? "Pick amount"
-                            : sellFraction >= 0.99
-                              ? `Sell All (${(estimate?.pnl ?? 0) >= 0 ? "+" : ""}$${Math.abs(estimate?.pnl ?? 0).toFixed(2)})`
-                              : `Sell ${Math.round(sellFraction * 100)}% (${((estimate?.pnl ?? 0) * sellFraction) >= 0 ? "+" : ""}$${Math.abs((estimate?.pnl ?? 0) * sellFraction).toFixed(2)})`
-                        }
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => {
-                      setExpandedSellId(bet.id);
-                      setSellFraction(null);
-                      setCustomSellAmount("");
-                    }}
-                    disabled={!estimate}
-                    className={`w-full mt-2.5 py-2.5 rounded-xl text-xs font-bold transition-all active:scale-[0.98] disabled:opacity-50 ${
-                      !estimate
-                        ? "bg-ink/10 text-muted"
-                        : estimate.pnl >= 0
-                        ? "bg-up/15 text-up-dark border border-up/20"
-                        : "bg-down/15 text-down border border-down/20"
-                    }`}
-                  >
-                    {!estimate
-                      ? "Price unavailable"
-                      : `Sell (${estimate.pnl >= 0 ? "+" : ""}$${Math.abs(estimate.pnl).toFixed(2)})`}
-                  </button>
-                )}
-              </>
+              <button
+                onClick={() => handleSell(bet)}
+                disabled={isSelling || !estimate}
+                className={`w-full mt-2.5 py-2.5 rounded-xl text-xs font-bold transition-all active:scale-[0.98] disabled:opacity-50 ${
+                  !estimate
+                    ? "bg-ink/10 text-muted"
+                    : estimate.pnl >= 0
+                    ? "bg-up/15 text-up-dark border border-up/20"
+                    : "bg-down/15 text-down border border-down/20"
+                }`}
+              >
+                {isSelling
+                  ? "Selling..."
+                  : !estimate
+                  ? "Price unavailable"
+                  : `Sell (${estimate.pnl >= 0 ? "+" : ""}$${Math.abs(estimate.pnl).toFixed(2)})`}
+              </button>
             )}
           </div>
         );
