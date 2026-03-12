@@ -479,36 +479,25 @@ export function LiveBetView({ bets, onClose, onCashOut, telegramId }: LiveBetVie
 
       <Confetti active={showConfetti} />
 
-      {/* PINNED bottom — single button, always rendered, no conditional branches */}
-      <div className="shrink-0 px-6 pt-3 pb-[env(safe-area-inset-bottom,12px)] bg-bg border-t border-amber/5">
+      {/* DEBUG: hardcoded sell button — zero conditionals, just green + "SELL" */}
+      <div className="shrink-0 px-6 pt-3 pb-4 bg-bg border-t border-amber/5">
         <button
           onClick={async (e) => {
             e.stopPropagation();
-            if (onCashOut && !activePriceInfo.expired && !cashingOut) {
+            if (onCashOut) {
               setCashingOut(true);
               try { await onCashOut(activeBet, activePriceInfo.price); } finally { setCashingOut(false); }
             } else {
               onClose();
             }
           }}
-          disabled={cashingOut}
-          className={`w-full py-4 rounded-xl text-base font-bold transition-all active:scale-[0.98] disabled:opacity-50 ${
-            !onCashOut || activePriceInfo.expired
-              ? "bg-ink/10 text-muted"
-              : activePriceInfo.pnl >= 0
-                ? "bg-up text-charcoal shadow-lg shadow-up/20"
-                : "bg-down text-white shadow-lg shadow-down/20"
-          }`}
+          className="w-full py-4 rounded-xl text-lg font-black bg-up text-charcoal shadow-lg shadow-up/30"
         >
-          {cashingOut
-            ? "Selling..."
-            : !onCashOut
-              ? "Minimize"
-              : activePriceInfo.expired
-                ? "Close"
-                : `Sell Position (${activePriceInfo.pnl >= 0 ? "+" : ""}$${Math.abs(activePriceInfo.pnl).toFixed(2)})`
-          }
+          💰 SELL POSITION 💰
         </button>
+        <p className="text-[9px] text-center text-muted/50 mt-1 font-mono">
+          cashOut={onCashOut ? "yes" : "no"} pnl={activePriceInfo.pnl.toFixed(2)} exp={String(activePriceInfo.expired)}
+        </p>
       </div>
     </div>
   );
