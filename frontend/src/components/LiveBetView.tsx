@@ -178,13 +178,11 @@ function Sparkline({
   );
 }
 
-function SingleBetView({ bet, telegramId, onStatusChange, onPriceUpdate, onSell, isSelling }: {
+function SingleBetView({ bet, telegramId, onStatusChange, onPriceUpdate }: {
   bet: LiveBet;
   telegramId?: number;
   onStatusChange?: (winning: boolean, expired: boolean) => void;
   onPriceUpdate?: (price: number, pnl: number, expired: boolean) => void;
-  onSell?: (bet: LiveBet, currentPrice: number) => void;
-  isSelling?: boolean;
 }) {
   const { currentPrice, connected, priceHistory } = useLivePrice(bet.asset, bet.entryPrice);
   const { remaining, expired } = useCountdown(bet.endTime);
@@ -327,44 +325,23 @@ function SingleBetView({ bet, telegramId, onStatusChange, onPriceUpdate, onSell,
         </div>
       )}
 
-      {/* Sell button replaces Entry/Status cards to fit in Telegram viewport */}
-      {onSell ? (
-        <button
-          onClick={() => !isSelling && !expired && onSell(bet, currentPrice)}
-          disabled={isSelling || expired}
-          className={`w-full max-w-xs mt-2 py-4 rounded-xl text-base font-bold transition-all active:scale-[0.98] disabled:opacity-50 ${
-            expired
-              ? "bg-ink/10 text-muted"
-              : isWinning || priceDiff === 0
-                ? "bg-up text-charcoal shadow-lg shadow-up/20"
-                : "bg-down text-white shadow-lg shadow-down/20"
-          }`}
-        >
-          {isSelling
-            ? "Selling..."
-            : expired
-              ? "Market Closed"
-              : `Sell Position (${estimatedPnl >= 0 ? "+" : ""}$${Math.abs(estimatedPnl).toFixed(2)})`
-          }
-        </button>
-      ) : (
-        <div className="grid grid-cols-2 gap-4 w-full max-w-xs">
-          <div className="bg-ink/5 rounded-xl p-3 text-center border border-amber/10">
-            <div className="text-muted text-[9px] font-mono uppercase tracking-wider mb-1">Entry</div>
-            <div className="text-ink font-bold font-mono text-sm">{formatPrice(bet.entryPrice)}</div>
-          </div>
-          <div className={`rounded-xl p-3 text-center border ${
-            isWinning ? "bg-up/10 border-up/20" : priceDiff === 0 ? "bg-ink/5 border-amber/10" : "bg-down/10 border-down/20"
+      {/* Entry vs Current */}
+      <div className="grid grid-cols-2 gap-4 w-full max-w-xs">
+        <div className="bg-ink/5 rounded-xl p-3 text-center border border-amber/10">
+          <div className="text-muted text-[9px] font-mono uppercase tracking-wider mb-1">Entry</div>
+          <div className="text-ink font-bold font-mono text-sm">{formatPrice(bet.entryPrice)}</div>
+        </div>
+        <div className={`rounded-xl p-3 text-center border ${
+          isWinning ? "bg-up/10 border-up/20" : priceDiff === 0 ? "bg-ink/5 border-amber/10" : "bg-down/10 border-down/20"
+        }`}>
+          <div className="text-muted text-[9px] font-mono uppercase tracking-wider mb-1">Status</div>
+          <div className={`font-bold font-mono text-sm ${
+            isWinning ? "text-up" : priceDiff === 0 ? "text-ink/60" : "text-down"
           }`}>
-            <div className="text-muted text-[9px] font-mono uppercase tracking-wider mb-1">Status</div>
-            <div className={`font-bold font-mono text-sm ${
-              isWinning ? "text-up" : priceDiff === 0 ? "text-ink/60" : "text-down"
-            }`}>
-              {isWinning ? "WINNING" : priceDiff === 0 ? "EVEN" : "LOSING"}
-            </div>
+            {isWinning ? "WINNING" : priceDiff === 0 ? "EVEN" : "LOSING"}
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }
@@ -481,12 +458,6 @@ export function LiveBetView({ bets, onClose, onCashOut, telegramId }: LiveBetVie
           key={activeBet.id}
           bet={activeBet}
           telegramId={telegramId}
-          onSell={onCashOut ? async (bet, price) => {
-            if (cashingOut) return;
-            setCashingOut(true);
-            try { await onCashOut(bet, price); } finally { setCashingOut(false); }
-          } : undefined}
-          isSelling={cashingOut}
           onStatusChange={(winning, isExpired) => {
             if (isExpired && winning && !confettiPlayedRef.current) {
               confettiPlayedRef.current = true;
@@ -508,14 +479,36 @@ export function LiveBetView({ bets, onClose, onCashOut, telegramId }: LiveBetVie
 
       <Confetti active={showConfetti} />
 
-      {/* PINNED bottom — Minimize only, sell button is inside scrollable content */}
-      <div className="shrink-0 px-6 pt-2 pb-[env(safe-area-inset-bottom,8px)] bg-bg border-t border-amber/5">
-        <button
-          onClick={(e) => { e.stopPropagation(); onClose(); }}
-          className="w-full py-2 rounded-xl text-xs font-semibold text-ink/40 active:bg-ink/10 transition-colors"
-        >
-          Minimize
-        </button>
+      {/* PINNED bottom — sell button always visible, outside scroll */}
+      <div className="shrink-0 px-6 pt-3 pb-[env(safe-area-inset-bottom,12px)] bg-bg border-t border-amber/5">
+        {onCashOut && !activePriceInfo.expired ? (
+          <button
+            onClick={async (e) => {
+              e.stopPropagation();
+              if (cashingOut) return;
+              setCashingOut(true);
+              try { await onCashOut(activeBet, activePriceInfo.price); } finally { setCashingOut(false); }
+            }}
+            disabled={cashingOut}
+            className={`w-full py-4 rounded-xl text-base font-bold transition-all active:scale-[0.98] disabled:opacity-50 ${
+              activePriceInfo.pnl >= 0
+                ? "bg-up text-charcoal shadow-lg shadow-up/20"
+                : "bg-down text-white shadow-lg shadow-down/20"
+            }`}
+          >
+            {cashingOut
+              ? "Selling..."
+              : `Sell Position (${activePriceInfo.pnl >= 0 ? "+" : ""}$${Math.abs(activePriceInfo.pnl).toFixed(2)})`
+            }
+          </button>
+        ) : (
+          <button
+            onClick={(e) => { e.stopPropagation(); onClose(); }}
+            className="w-full py-3 rounded-xl text-sm font-semibold text-ink/40 active:bg-ink/10 transition-colors"
+          >
+            {activePriceInfo.expired ? "Close" : "Minimize"}
+          </button>
+        )}
       </div>
     </div>
   );
