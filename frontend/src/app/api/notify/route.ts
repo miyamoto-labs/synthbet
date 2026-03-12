@@ -124,13 +124,30 @@ export async function GET(req: Request) {
         const absEdge = Math.abs(edge);
 
         if (absEdge >= EDGE_THRESHOLD) {
-          // Skip if market doesn't have enough time left to trade
+          // Guard 1: Require event_end_time — skip signals without it
+          if (!insight.event_end_time) {
+            console.log(`[Notify] Skipping ${asset} ${TIMEFRAMES[i]}: missing event_end_time`);
+            continue;
+          }
+
+          // Guard 2: Skip if market window has expired or nearly expired
           // 15min markets: need 5+ min remaining, hourly/daily: need 15+ min
-          if (insight.event_end_time) {
-            const msRemaining = new Date(insight.event_end_time).getTime() - Date.now();
-            const minRequired = TIMEFRAMES[i] === "15min" ? 5 * 60_000 : 15 * 60_000;
-            if (msRemaining < minRequired) {
-              console.log(`[Notify] Skipping ${asset} ${TIMEFRAMES[i]}: only ${Math.round(msRemaining / 60000)}m remaining`);
+          const msRemaining = new Date(insight.event_end_time).getTime() - Date.now();
+          const minRequired = TIMEFRAMES[i] === "15min" ? 5 * 60_000 : 15 * 60_000;
+          if (msRemaining < minRequired) {
+            console.log(`[Notify] Skipping ${asset} ${TIMEFRAMES[i]}: only ${Math.round(msRemaining / 60000)}m remaining (need ${minRequired / 60000}m)`);
+            continue;
+          }
+
+          // Guard 3: Skip if market window started too long ago (stale data from API)
+          // Catches cases where API returns old windows even if end_time hasn't passed
+          if (insight.event_start_time) {
+            const msSinceStart = Date.now() - new Date(insight.event_start_time).getTime();
+            const maxAge = TIMEFRAMES[i] === "15min" ? 20 * 60_000
+                         : TIMEFRAMES[i] === "hourly" ? 75 * 60_000
+                         : 36 * 60 * 60_000; // daily: 36h max
+            if (msSinceStart > maxAge) {
+              console.log(`[Notify] Skipping ${asset} ${TIMEFRAMES[i]}: started ${Math.round(msSinceStart / 60000)}m ago (stale)`);
               continue;
             }
           }
