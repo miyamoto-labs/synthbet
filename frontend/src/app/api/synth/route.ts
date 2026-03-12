@@ -39,6 +39,12 @@ async function fetchSynthInsight(asset: string, timeframe: "15min" | "hourly" | 
 }
 
 export async function GET() {
+  // Kill switch: return empty data without burning API credits
+  if (process.env.PAUSE_SYNTH === "true") {
+    const empty = ASSETS.map((asset) => ({ asset, "15min": null, hourly: null, daily: null }));
+    return NextResponse.json({ markets: empty, timestamp: new Date().toISOString(), paused: true });
+  }
+
   try {
     const results = await Promise.all(
       ASSETS.map(async (asset) => {

@@ -79,6 +79,10 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  if (process.env.PAUSE_SYNTH === "true") {
+    return NextResponse.json({ sent: false, reason: "PAUSE_SYNTH enabled — saving credits" });
+  }
+
   if (!BOT_TOKEN || !CHAT_ID) {
     return NextResponse.json(
       { error: "Missing TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID" },
