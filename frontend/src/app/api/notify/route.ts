@@ -204,7 +204,7 @@ export async function GET(req: Request) {
 
   // Dynamic banner (type=edge for edge alerts)
   // Include timestamp to bust Telegram's aggressive image cache
-  const bannerUrl = `${APP_URL}/api/og?type=edge&title=${encodeURIComponent(
+  const bannerUrl = `${APP_URL}/api/signal-banner?type=edge&title=${encodeURIComponent(
     `${signals.length} Edge Signal${signals.length > 1 ? "s" : ""}`
   )}&subtitle=${encodeURIComponent(
     signals.map((s) => `${s.asset} ${s.tradeDirection}`).join(" · ")
