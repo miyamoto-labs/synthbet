@@ -479,8 +479,14 @@ export function LiveBetView({ bets, onClose, onCashOut, telegramId }: LiveBetVie
 
       <Confetti active={showConfetti} />
 
-      {/* PINNED bottom — Cash Out + Minimize, always visible */}
-      <div className="shrink-0 px-6 pt-3 pb-8 space-y-2 bg-bg border-t border-amber/5">
+      {/* PINNED bottom — Minimize + Cash Out, always visible */}
+      <div className="shrink-0 px-6 pt-3 pb-[env(safe-area-inset-bottom,8px)] space-y-2 bg-bg border-t border-amber/5">
+        <button
+          onClick={(e) => { e.stopPropagation(); onClose(); }}
+          className="w-full py-2 rounded-xl text-xs font-semibold text-ink/40 active:bg-ink/10 transition-colors"
+        >
+          Minimize
+        </button>
         <button
           onClick={async (e) => {
             e.stopPropagation();
@@ -502,17 +508,11 @@ export function LiveBetView({ bets, onClose, onCashOut, telegramId }: LiveBetVie
           }`}
         >
           {cashingOut
-            ? "Closing..."
+            ? "Selling..."
             : activePriceInfo.expired
               ? "Market Closed"
-              : `Cash Out (${activePriceInfo.pnl >= 0 ? "+" : ""}$${Math.abs(activePriceInfo.pnl).toFixed(2)})`
+              : `Sell Position (${activePriceInfo.pnl >= 0 ? "+" : ""}$${Math.abs(activePriceInfo.pnl).toFixed(2)})`
           }
-        </button>
-        <button
-          onClick={(e) => { e.stopPropagation(); onClose(); }}
-          className="w-full py-2.5 rounded-xl text-xs font-semibold text-ink/40 active:bg-ink/10 transition-colors"
-        >
-          Minimize
         </button>
       </div>
     </div>
