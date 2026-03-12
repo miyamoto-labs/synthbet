@@ -801,11 +801,11 @@ export default function Home() {
             {(selectedCategory === "All" || selectedCategory === "Crypto") && (
               <>
                 {loading ? (
-                  <div className="space-y-4">
+                  <div className="space-y-4 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
                     {[1, 2, 3].map((i) => (
                       <div
                         key={i}
-                        className="bg-card rounded-2xl p-4 animate-pulse h-64 shadow-sm"
+                        className="bg-card rounded-2xl p-4 animate-pulse h-64 shadow-sm lg:rounded-xl lg:p-3"
                       />
                     ))}
                   </div>
@@ -823,7 +823,8 @@ export default function Home() {
                     </button>
                   </div>
                 ) : (
-                  [...markets]
+                  <div className="space-y-4 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
+                  {[...markets]
                     .sort((a, b) => {
                       // Put the deep-linked asset first
                       const dl = deepLink.current.asset;
@@ -850,7 +851,8 @@ export default function Home() {
                           : undefined
                       }
                     />
-                  ))
+                  ))}
+                  </div>
                 )}
               </>
             )}

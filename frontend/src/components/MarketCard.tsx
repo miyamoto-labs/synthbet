@@ -130,20 +130,20 @@ export function MarketCard({ asset, min15, hourly, daily, onBetPlaced, onMarketE
 
   return (
     <div
-      className="bg-card rounded-2xl p-4 space-y-4 animate-card-enter border border-amber/10"
+      className="bg-card rounded-2xl p-4 space-y-4 animate-card-enter border border-amber/10 lg:rounded-xl lg:p-3 lg:space-y-2.5"
       style={{ animationDelay: `${index * 0.1}s` }}
     >
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div
-            className="w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold"
+            className="w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold lg:w-8 lg:h-8 lg:text-sm"
             style={{ backgroundColor: ASSET_BG_COLORS[asset] || "rgba(200,132,58,0.1)", color: ASSET_TEXT_COLORS[asset] || "#E4A95A" }}
           >
             {ASSET_ICONS[asset] || asset[0]}
           </div>
           <div>
-            <div className="font-bold text-lg text-ink">{asset}</div>
+            <div className="font-bold text-lg text-ink lg:text-base">{asset}</div>
             <div className="text-muted text-xs font-mono">{formatPrice(insight.current_price)}</div>
           </div>
         </div>
@@ -178,14 +178,14 @@ export function MarketCard({ asset, min15, hourly, daily, onBetPlaced, onMarketE
           <span className={`w-2 h-2 rounded-full animate-pulse-dot ${
             recommendedDirection === "UP" ? "bg-up" : "bg-down"
           }`} />
-          <span className="text-sm font-semibold text-ink">
+          <span className="text-sm font-semibold text-ink lg:text-xs">
             Edge says {recommendedDirection} — {signalStrength} ({absEdge.toFixed(0)}% edge)
           </span>
         </div>
       ) : (
         <div className="rounded-xl px-3 py-2.5 flex items-center gap-2.5 bg-ink/4 border border-ink/8">
           <span className="w-2 h-2 rounded-full bg-muted/40" />
-          <span className="text-sm font-medium text-muted">
+          <span className="text-sm font-medium text-muted lg:text-xs">
             No edge — models agree ({absEdge.toFixed(0)}% diff)
           </span>
         </div>
@@ -234,18 +234,18 @@ export function MarketCard({ asset, min15, hourly, daily, onBetPlaced, onMarketE
 
       {/* Market prices — what you're actually buying */}
       <div className="grid grid-cols-2 gap-2">
-        <div className="bg-up/8 border border-up/15 rounded-xl px-3 py-2 text-center">
+        <div className="bg-up/8 border border-up/15 rounded-xl px-3 py-2 text-center lg:px-2 lg:py-1.5">
           <div className="text-[10px] text-up-dark font-semibold uppercase tracking-wider">Up</div>
-          <div className="text-lg font-bold font-mono text-up-dark">
+          <div className="text-lg font-bold font-mono text-up-dark lg:text-base">
             {Math.round(insight.polymarket_probability_up * 100)}¢
           </div>
           <div className="text-[10px] text-muted font-mono">
             Synth: {Math.round(insight.synth_probability_up * 100)}¢
           </div>
         </div>
-        <div className="bg-down/8 border border-down/15 rounded-xl px-3 py-2 text-center">
+        <div className="bg-down/8 border border-down/15 rounded-xl px-3 py-2 text-center lg:px-2 lg:py-1.5">
           <div className="text-[10px] text-down font-semibold uppercase tracking-wider">Down</div>
-          <div className="text-lg font-bold font-mono text-down">
+          <div className="text-lg font-bold font-mono text-down lg:text-base">
             {Math.round((1 - insight.polymarket_probability_up) * 100)}¢
           </div>
           <div className="text-[10px] text-muted font-mono">
