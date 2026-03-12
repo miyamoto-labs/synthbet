@@ -928,7 +928,7 @@ function MarketBetCard({
 
   return (
     <div
-      className="bg-card rounded-2xl p-4 border border-amber/10 space-y-3 cursor-pointer active:scale-[0.98] transition-transform"
+      className="bg-card rounded-2xl p-4 border border-amber/10 space-y-3 cursor-pointer active:scale-[0.98] transition-transform lg:p-3 lg:rounded-xl"
       onClick={() => {
         if (!side && !done) {
           haptic("light");
@@ -942,12 +942,12 @@ function MarketBetCard({
           <img
             src={market.image}
             alt=""
-            className="w-12 h-12 rounded-xl object-cover shrink-0"
+            className="w-12 h-12 rounded-xl object-cover shrink-0 lg:w-10 lg:h-10"
           />
         )}
         <div className="flex-1 min-w-0">
           <div className="flex items-start gap-1.5">
-            <h3 className="text-sm font-semibold text-white leading-snug line-clamp-2 flex-1">
+            <h3 className="text-sm font-semibold text-white leading-snug line-clamp-2 flex-1 lg:text-xs">
               {market.question}
             </h3>
             <ShareButton market={market} />
@@ -1010,7 +1010,7 @@ function MarketBetCard({
               setError(null);
             }}
             disabled={loading || noWallet}
-            className={`py-2.5 rounded-xl font-bold text-sm transition-all truncate px-2 ${
+            className={`py-2.5 rounded-xl font-bold text-sm transition-all truncate px-2 lg:py-2 lg:text-xs ${
               side === "UP"
                 ? "bg-up text-charcoal scale-[1.02] shadow-lg shadow-up/30 ring-2 ring-up/40"
                 : "bg-up text-charcoal shadow-sm hover:shadow-md"
@@ -1028,7 +1028,7 @@ function MarketBetCard({
               setError(null);
             }}
             disabled={loading || noWallet}
-            className={`py-2.5 rounded-xl font-bold text-sm transition-all truncate px-2 ${
+            className={`py-2.5 rounded-xl font-bold text-sm transition-all truncate px-2 lg:py-2 lg:text-xs ${
               side === "DOWN"
                 ? "bg-down text-white scale-[1.02] shadow-lg shadow-down/30 ring-2 ring-down/40"
                 : "bg-down/90 text-white shadow-sm hover:shadow-md"
@@ -1173,12 +1173,14 @@ export function FeaturedMarkets({ walletAddress, balance, selectedCategory, mark
         <h2 className="text-lg font-bold text-white flex items-center gap-2">
           Trending Markets
         </h2>
-        {[1, 2, 3].map((i) => (
-          <div
-            key={i}
-            className="bg-card rounded-2xl p-4 animate-pulse h-36"
-          />
-        ))}
+        <div className="space-y-3 lg:grid lg:grid-cols-3 lg:gap-3 lg:space-y-0">
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="bg-card rounded-2xl p-4 animate-pulse h-36 lg:rounded-xl lg:p-3"
+            />
+          ))}
+        </div>
       </div>
     );
   }
@@ -1209,17 +1211,19 @@ export function FeaturedMarkets({ walletAddress, balance, selectedCategory, mark
             </p>
           </div>
         ) : (
-          filtered.map((m) => (
-            <MarketBetCard
-              key={m.slug}
-              market={m}
-              walletAddress={walletAddress}
-              balance={balance}
-              onBetPlaced={onBetPlaced}
-              isHot={m.volume >= hotThreshold}
-              onExpand={() => setExpandedMarket(m)}
-            />
-          ))
+          <div className="space-y-3 lg:grid lg:grid-cols-3 lg:gap-3 lg:space-y-0">
+            {filtered.map((m) => (
+              <MarketBetCard
+                key={m.slug}
+                market={m}
+                walletAddress={walletAddress}
+                balance={balance}
+                onBetPlaced={onBetPlaced}
+                isHot={m.volume >= hotThreshold}
+                onExpand={() => setExpandedMarket(m)}
+              />
+            ))}
+          </div>
         )}
       </div>
 
