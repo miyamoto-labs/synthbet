@@ -6,7 +6,7 @@
 >
 > **Synthdata Predictive Intelligence Hackathon 2026**
 
-**Live:** [@synthbet_bot on Telegram](https://t.me/synthbet_bot) | [Pitch Page](https://synthbet.vercel.app/pitch) | [GitHub](https://github.com/miyamoto-labs/synthbet)
+**Live:** [@synthbet_bot on Telegram](https://t.me/synthbet_bot) | [Pitch Page](https://frontend-three-phi-40.vercel.app/pitch) | [GitHub](https://github.com/miyamoto-labs/synthbet)
 
 ---
 
@@ -17,7 +17,7 @@ Deja. is a Telegram Mini App that lets 900M+ Telegram users trade prediction mar
 **How it works:**
 
 1. **Synth Simulates** — 1,000 Monte Carlo price paths predict BTC, ETH & SOL outcomes via the Synthdata Predictive Intelligence API
-2. **Edge Detected** — When Synth's probability diverges from Polymarket's implied odds by 15%+, that's a tradeable signal
+2. **Edge Detected** — When Synth's probability diverges from Polymarket's implied odds by 10%+, that's a tradeable signal
 3. **You Trade** — One tap places a real USDC order on Polymarket's CLOB. Gasless via Gnosis Safe. Live tracking until resolution.
 
 ---
@@ -79,12 +79,12 @@ Authorization: Apikey {SYNTH_API_KEY}
 **Edge detection:**
 ```
 Edge = synth_probability_up - polymarket_probability_up
-If |Edge| >= 15% -> Signal detected -> Trade executed
+If |Edge| >= 10% -> Signal detected -> Trade executed
 ```
 
 **Signal classification:**
 - Strong: Edge >= 25%
-- Moderate: Edge 15-25%
+- Moderate: Edge 10-25%
 - Direction: positive = UP underpriced, negative = DOWN underpriced
 
 **Bet sizing:** Half-Kelly formula `f* = (bp - q) / 2b` capped at $5-$100.

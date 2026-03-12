@@ -8,7 +8,7 @@
 
 **Category:** Developer / Trading Application
 
-**Live:** [@synthbet_bot on Telegram](https://t.me/synthbet_bot) | [Pitch Page](https://synthbet.vercel.app/pitch) | [GitHub](https://github.com/miyamoto-labs/synthbet)
+**Live:** [@synthbet_bot on Telegram](https://t.me/synthbet_bot) | [Pitch Page](https://frontend-three-phi-40.vercel.app/pitch) | [GitHub](https://github.com/miyamoto-labs/synthbet)
 
 ---
 
@@ -18,11 +18,11 @@ The Synthdata Predictive Intelligence API is the core of every decision in Deja.
 
 ### 1. Monte Carlo Edge Detection
 
-Synth runs 1,000 Monte Carlo price path simulations for BTC, ETH, and SOL. We compare Synth's probability distribution against Polymarket's implied odds. When they diverge by 15%+, that's a tradeable edge.
+Synth runs 1,000 Monte Carlo price path simulations for BTC, ETH, and SOL. We compare Synth's probability distribution against Polymarket's implied odds. When they diverge by 10%+, that's a tradeable edge.
 
 ```
 Edge = synth_probability_up - polymarket_probability_up
-If |Edge| >= 15% -> Signal detected -> Trade executed
+If |Edge| >= 10% -> Signal detected -> Trade executed
 ```
 
 ### 2. Multi-Timeframe Analysis
@@ -51,12 +51,12 @@ Where `b` = payout odds from Polymarket, `p` = Synth probability, `q` = 1-p. Thi
 ### 4. Signal Classification & Strength
 
 - **Strong signal**: Edge >= 25% (Synth highly divergent from market)
-- **Moderate signal**: Edge 15-25%
+- **Moderate signal**: Edge 10-25%
 - Direction determined by sign: positive = UP underpriced, negative = DOWN underpriced
 
 ### 5. Automated Alert Pipeline
 
-A cron job queries all 9 asset/timeframe combinations via Synth API every 15 minutes. Signals exceeding the 15% threshold trigger Telegram photo notifications with:
+A cron job queries all 9 asset/timeframe combinations via Synth API every 15 minutes. Signals exceeding the 10% threshold trigger Telegram photo notifications with:
 - Dynamic OG image showing the edge visualization
 - Deep-link URL for one-tap trading directly from the notification
 - Full signal context (Synth %, Market %, edge strength, asset, timeframe)
