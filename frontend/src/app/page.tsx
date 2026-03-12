@@ -460,7 +460,7 @@ export default function Home() {
     }
   }
 
-  async function handleCashOut(bet: LiveBet, currentPrice: number) {
+  async function handleCashOut(bet: LiveBet, currentPrice: number, fraction: number = 1) {
     const user = getTelegramUser();
     if (!user?.id || !bet.dbId) return;
 
@@ -472,6 +472,7 @@ export default function Home() {
           telegram_id: user.id,
           bet_id: bet.dbId,
           current_price: currentPrice,
+          sell_fraction: fraction,
         }),
       });
 
@@ -479,10 +480,14 @@ export default function Home() {
       if (!res.ok) throw new Error(data.error || "Close failed");
 
       const pnl = data.pnl || 0;
+      const isFullSell = fraction >= 0.99;
+      const pctLabel = Math.round(fraction * 100);
 
       setResultToast({
         type: pnl >= 0 ? "won" : "lost",
-        text: `Sold — ${pnl >= 0 ? "+" : ""}$${pnl.toFixed(2)}`,
+        text: isFullSell
+          ? `Sold — ${pnl >= 0 ? "+" : ""}$${pnl.toFixed(2)}`
+          : `Sold ${pctLabel}% — ${pnl >= 0 ? "+" : ""}$${pnl.toFixed(2)}`,
       });
       setTimeout(() => setResultToast(null), 4000);
 
@@ -497,9 +502,20 @@ export default function Home() {
       setTimeout(fetchBalance, 1000);
       setPortfolioRefreshKey((k) => k + 1);
 
-      // Close the live view after selling
-      setLiveBetOpen(false);
-      setLiveBets([]);
+      if (isFullSell) {
+        // Full sell — close the live view
+        setLiveBetOpen(false);
+        setLiveBets([]);
+      } else {
+        // Partial sell — update the bet amount in local state
+        setLiveBets((prev) =>
+          prev.map((b) =>
+            b.dbId === bet.dbId
+              ? { ...b, amount: data.remaining_amount }
+              : b
+          )
+        );
+      }
     } catch (err: any) {
       console.error("[CashOut] Error:", err);
       haptic("error");

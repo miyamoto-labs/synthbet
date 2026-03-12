@@ -27,7 +27,7 @@ export type LiveBet = {
 type LiveBetViewProps = {
   bets: LiveBet[];
   onClose: () => void;
-  onCashOut?: (bet: LiveBet, currentPrice: number) => void;
+  onCashOut?: (bet: LiveBet, currentPrice: number, fraction?: number) => void;
   telegramId?: number;
 };
 
@@ -352,6 +352,8 @@ export function LiveBetView({ bets, onClose, onCashOut, telegramId }: LiveBetVie
   const confettiPlayedRef = useRef(false);
   const [activePriceInfo, setActivePriceInfo] = useState<{ price: number; pnl: number; expired: boolean }>({ price: 0, pnl: 0, expired: false });
   const [cashingOut, setCashingOut] = useState(false);
+  const [showSellOptions, setShowSellOptions] = useState(false);
+  const [sellFraction, setSellFraction] = useState<number | null>(null);
 
   // Telegram native: BackButton, dark header, disable swipes
   useEffect(() => {
@@ -479,34 +481,97 @@ export function LiveBetView({ bets, onClose, onCashOut, telegramId }: LiveBetVie
 
       <Confetti active={showConfetti} />
 
-      {/* PINNED bottom — single button, always rendered */}
+      {/* PINNED bottom — sell button with partial sell options */}
       <div className="shrink-0 px-6 pt-3 pb-[env(safe-area-inset-bottom,12px)] bg-bg border-t border-amber/5">
+        {/* Percentage selector row — slides in when showSellOptions */}
+        {showSellOptions && onCashOut && !activePriceInfo.expired && (
+          <div className="flex gap-2 mb-3 animate-in slide-in-from-bottom-2 duration-200">
+            {[0.25, 0.5, 0.75, 1].map((frac) => {
+              const pctLabel = frac === 1 ? "100%" : `${Math.round(frac * 100)}%`;
+              const fracPnl = activePriceInfo.pnl * frac;
+              const isSelected = sellFraction === frac;
+              return (
+                <button
+                  key={frac}
+                  onClick={() => {
+                    setSellFraction(frac);
+                    haptic("light");
+                  }}
+                  className={`flex-1 py-2.5 rounded-lg text-center transition-all active:scale-[0.96] ${
+                    isSelected
+                      ? activePriceInfo.pnl >= 0
+                        ? "bg-up text-charcoal ring-2 ring-up/50"
+                        : "bg-down text-white ring-2 ring-down/50"
+                      : "bg-ink/10 text-muted hover:bg-ink/20"
+                  }`}
+                >
+                  <div className="text-sm font-bold">{pctLabel}</div>
+                  <div className={`text-[10px] font-mono ${
+                    isSelected
+                      ? activePriceInfo.pnl >= 0 ? "text-charcoal/70" : "text-white/70"
+                      : fracPnl >= 0 ? "text-up/70" : "text-down/70"
+                  }`}>
+                    {fracPnl >= 0 ? "+" : ""}{fracPnl.toFixed(2)}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Main action button */}
         <button
           onClick={async (e) => {
             e.stopPropagation();
-            if (onCashOut && !activePriceInfo.expired && !cashingOut) {
-              setCashingOut(true);
-              try { await onCashOut(activeBet, activePriceInfo.price); } finally { setCashingOut(false); }
-            } else {
+            if (!onCashOut || activePriceInfo.expired) {
               onClose();
+              return;
+            }
+            if (cashingOut) return;
+
+            if (!showSellOptions) {
+              // First tap — show percentage options
+              setShowSellOptions(true);
+              setSellFraction(1); // default to 100%
+              haptic("light");
+              return;
+            }
+
+            // Second tap — execute sell with selected fraction
+            const fraction = sellFraction || 1;
+            setCashingOut(true);
+            try {
+              await onCashOut(activeBet, activePriceInfo.price, fraction);
+            } finally {
+              setCashingOut(false);
+              setShowSellOptions(false);
+              setSellFraction(null);
             }
           }}
           disabled={cashingOut}
           className={`w-full py-4 rounded-xl text-base font-bold transition-all active:scale-[0.98] disabled:opacity-50 ${
             !onCashOut || activePriceInfo.expired
               ? "bg-ink/10 text-muted"
-              : activePriceInfo.pnl >= 0
-                ? "bg-up text-charcoal shadow-lg shadow-up/20"
-                : "bg-down text-white shadow-lg shadow-down/20"
+              : showSellOptions && sellFraction
+                ? activePriceInfo.pnl * sellFraction >= 0
+                  ? "bg-up text-charcoal shadow-lg shadow-up/20"
+                  : "bg-down text-white shadow-lg shadow-down/20"
+                : activePriceInfo.pnl >= 0
+                  ? "bg-up/20 text-up border border-up/30"
+                  : "bg-down/20 text-down border border-down/30"
           }`}
         >
           {cashingOut
-            ? "Selling..."
+            ? `Selling ${sellFraction && sellFraction < 1 ? Math.round(sellFraction * 100) + "%" : ""}...`
             : !onCashOut
               ? "Minimize"
               : activePriceInfo.expired
                 ? "Close"
-                : `Sell Position (${activePriceInfo.pnl >= 0 ? "+" : ""}$${Math.abs(activePriceInfo.pnl).toFixed(2)})`
+                : showSellOptions && sellFraction
+                  ? sellFraction >= 0.99
+                    ? `Sell All (${activePriceInfo.pnl >= 0 ? "+" : ""}$${Math.abs(activePriceInfo.pnl).toFixed(2)})`
+                    : `Sell ${Math.round(sellFraction * 100)}% (${(activePriceInfo.pnl * sellFraction) >= 0 ? "+" : ""}$${Math.abs(activePriceInfo.pnl * sellFraction).toFixed(2)})`
+                  : `Sell Position (${activePriceInfo.pnl >= 0 ? "+" : ""}$${Math.abs(activePriceInfo.pnl).toFixed(2)})`
           }
         </button>
       </div>

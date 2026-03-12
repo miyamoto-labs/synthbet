@@ -14,7 +14,10 @@ const DRY_MODE = process.env.DRY_MODE?.trim() === 'true';
  */
 export async function POST(req: NextRequest) {
   try {
-    const { telegram_id, bet_id, current_price, asset, direction, timeframe } = await req.json();
+    const { telegram_id, bet_id, current_price, asset, direction, timeframe, sell_fraction } = await req.json();
+
+    // sell_fraction: 0 < fraction <= 1 (default 1 = full close)
+    const fraction = typeof sell_fraction === 'number' ? Math.min(1, Math.max(0.01, sell_fraction)) : 1;
 
     if (!telegram_id || typeof current_price !== 'number') {
       return NextResponse.json(
@@ -74,15 +77,16 @@ export async function POST(req: NextRequest) {
 
     // Calculate P&L based on direction and price movement
     const entryPrice = bet.entry_price || 0;
+    const sellAmount = Math.round(bet.amount * fraction * 100) / 100; // portion being sold
     let pnl = 0;
     if (entryPrice > 0 && current_price > 0) {
       if (bet.direction === 'UP') {
-        pnl = bet.amount * ((current_price - entryPrice) / entryPrice);
+        pnl = sellAmount * ((current_price - entryPrice) / entryPrice);
       } else {
-        pnl = bet.amount * ((entryPrice - current_price) / entryPrice);
+        pnl = sellAmount * ((entryPrice - current_price) / entryPrice);
       }
-      // Cap loss at the wagered amount
-      pnl = Math.max(-bet.amount, pnl);
+      // Cap loss at the sold amount
+      pnl = Math.max(-sellAmount, pnl);
       // Round to 2 decimals
       pnl = Math.round(pnl * 100) / 100;
     }
@@ -128,20 +132,33 @@ export async function POST(req: NextRequest) {
     }
 
     // Update bet in database
-    const { error: updateErr } = await supabase
-      .from('synth_bets')
-      .update({
-        result: 'closed',
-        pnl,
-      })
-      .eq('id', bet.id);
+    const isFullSell = fraction >= 0.99; // treat 99%+ as full close
+    const remainingAmount = Math.round(bet.amount * (1 - fraction) * 100) / 100;
 
-    if (updateErr) {
-      console.error('[BetClose] DB update error:', updateErr);
+    if (isFullSell) {
+      // Full close — mark as closed with total PnL
+      const { error: updateErr } = await supabase
+        .from('synth_bets')
+        .update({
+          result: 'closed',
+          pnl: (bet.pnl || 0) + pnl, // accumulate any previous partial PnL
+        })
+        .eq('id', bet.id);
+      if (updateErr) console.error('[BetClose] DB update error:', updateErr);
+    } else {
+      // Partial sell — reduce amount, keep pending, track cumulative PnL
+      const { error: updateErr } = await supabase
+        .from('synth_bets')
+        .update({
+          amount: remainingAmount,
+          pnl: (bet.pnl || 0) + pnl,
+        })
+        .eq('id', bet.id);
+      if (updateErr) console.error('[BetClose] DB partial update error:', updateErr);
     }
 
-    // Credit/debit balance (return amount + pnl)
-    const returnAmount = bet.amount + pnl;
+    // Credit/debit balance (return sold portion + pnl on that portion)
+    const returnAmount = sellAmount + pnl;
     const newBalance = Math.max(0, (user.balance || 0) + returnAmount);
     const newBalanceRounded = Math.round(newBalance * 100) / 100;
 
@@ -153,6 +170,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       pnl,
+      fraction,
+      sell_amount: sellAmount,
+      remaining_amount: isFullSell ? 0 : remainingAmount,
       return_amount: returnAmount,
       new_balance: newBalanceRounded,
       clob_result: clobResult,
